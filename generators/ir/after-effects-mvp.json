@@ -1,0 +1,13 @@
+{
+  "host": "after-effects",
+  "version": "0.1.0",
+  "namespaces": [
+    {
+      "name": "app",
+      "methods": [{"name": "getVersion", "returns": "str"}],
+      "properties": [{"name": "active_project", "type": "Project | None", "source": "project.getActive"}]
+    },
+    {"name": "project", "methods": [{"name": "getActive", "returns": "Project | None"}]},
+    {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any"}]}
+  ]
+}

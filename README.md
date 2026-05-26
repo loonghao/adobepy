@@ -1,0 +1,51 @@
+# adobepy
+
+Shared Adobe desktop communication runtime for Python tools and DCC MCP
+adapters. Python talks to a local Rust broker; Adobe applications run thin UXP
+or CEP/ExtendScript bridges.
+
+`adobepy` is intended to be the common Adobe host layer for projects such as
+[`dcc-mcp-photoshop`](https://github.com/loonghao/dcc-mcp-photoshop) and future
+Adobe adapters. The public Python surface mirrors Adobe's JavaScript DOM where
+possible, while adding Pythonic aliases for agent and script ergonomics.
+
+Implemented pieces:
+
+- Rust `adobepy` CLI with `broker`, `doctor`, `install-bridge`, and `repl`.
+- Local JSON-RPC broker with per-session token, target, timeout, and capability gates.
+- Python SDK under `adobe.core`, `adobe.raw`, `adobe.photoshop`, `adobe.indesign`, `adobe.premiere`, `adobe.after_effects`, and `adobe.illustrator`.
+- UXP bridge templates for Photoshop, InDesign, and Premiere that dispatch to host APIs and broker raw JavaScript escape hatches.
+- CEP bridge templates for After Effects and Illustrator.
+- IR validation and `.pyi` stub generation.
+- `vx just package` distribution workflow.
+
+Validate everything:
+
+```powershell
+npm install
+npm run test:all
+```
+
+The full test suite type-checks bridge code, builds and exercises UXP/CEP
+bundles with mocked host runtimes, validates IR contracts, checks Python
+coverage, and runs Rust workspace tests.
+
+Build a redistributable Windows package:
+
+```powershell
+vx just package
+```
+
+The archive is written to `dist/adobepy-0.1.0-windows-x64.zip` with a sibling
+SHA256 file. Usage and packaging notes are in `docs/usage.md` and
+`docs/distribution.md`.
+
+Python facade example:
+
+```python
+from adobe.photoshop import Photoshop
+
+app = Photoshop()
+for layer in app.activeLayers:
+    print(layer.name)
+```

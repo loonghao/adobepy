@@ -1,0 +1,16 @@
+target/
+node_modules/
+dist/
+build/
+!bridges/**/dist/
+!bridges/**/dist/**
+.adobepy/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+*.egg-info/

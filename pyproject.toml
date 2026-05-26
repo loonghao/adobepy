@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adobepy"
+version = "0.1.0"
+description = "Python SDK and broker contracts for controlling Adobe desktop hosts through UXP and CEP bridges."
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "adobepy contributors" }]
+license = "MIT OR Apache-2.0"
+license-files = ["LICENSE-MIT", "LICENSE-APACHE"]
+keywords = ["adobe", "photoshop", "indesign", "premiere", "after-effects", "illustrator", "uxp", "cep", "python", "mcp"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/loonghao/adobepy"
+Repository = "https://github.com/loonghao/adobepy"
+"Bug Tracker" = "https://github.com/loonghao/adobepy/issues"
+Documentation = "https://github.com/loonghao/adobepy/tree/main/docs"
+
+[tool.setuptools]
+package-dir = {"" = "python"}
+
+[tool.setuptools.packages.find]
+where = ["python"]
+exclude = ["tests", "tests.*"]
+namespaces = false
+
+[tool.coverage.run]
+branch = true
+source = ["python/adobe", "generators"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true

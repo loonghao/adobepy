@@ -1,0 +1,47 @@
+# Contributing
+
+`adobepy` is a shared communication layer for Adobe desktop automation and DCC
+MCP adapters. Changes should keep the protocol stable, the Python facade easy to
+learn for Adobe JavaScript users, and the bridge implementation small enough to
+audit.
+
+## Design Rules
+
+- Keep host-specific behavior behind host adapters. Broker, protocol, client,
+  and capability code should not grow Photoshop-only assumptions.
+- Prefer generated or schema-backed facade additions over hand-written drift.
+  When hand-writing a method, add the IR and bridge capability update in the
+  same change.
+- Preserve both JS-shaped names and Pythonic aliases when exposing Adobe DOM
+  concepts.
+- Use explicit capability checks for optional host methods. Do not make callers
+  discover missing bridge support through generic runtime errors.
+- Keep raw JavaScript and ExtendScript escape hatches available but clearly
+  separated from typed facade methods.
+- Keep Python runtime support at 3.8+. If native Python extension modules are
+  introduced, build them with `abi3-py38`.
+
+## Quality Gates
+
+Run the narrowest useful gate while iterating, then the full gate before
+publishing:
+
+```powershell
+npm run test:quick
+npm run test:bridges
+npm run test:all
+vx just package
+```
+
+New code should include tests at the lowest stable layer:
+
+- protocol and broker rules in Rust unit tests;
+- Python aliases and facade behavior in Python facade tests;
+- bridge dispatch behavior in UXP/CEP mock protocol tests;
+- release artifact expectations in package smoke tests.
+
+## Compatibility
+
+The project intentionally supports Python 3.8+ for downstream adapters that
+still run in conservative production environments. Avoid syntax or runtime APIs
+that require newer Python versions unless a compatibility shim exists.

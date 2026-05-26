@@ -1,0 +1,13 @@
+{
+  "host": "indesign",
+  "version": "0.1.0",
+  "namespaces": [
+    {
+      "name": "app",
+      "methods": [{"name": "getVersion", "returns": "str"}],
+      "properties": [{"name": "active_document", "type": "Document | None", "source": "document.getActive"}]
+    },
+    {"name": "document", "methods": [{"name": "getActive", "returns": "Document | None"}]},
+    {"name": "raw", "methods": [{"name": "evalJs", "returns": "Any"}]}
+  ]
+}

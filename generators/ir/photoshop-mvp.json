@@ -1,0 +1,44 @@
+{
+  "host": "photoshop",
+  "version": "0.1.0",
+  "namespaces": [
+    {
+      "name": "app",
+      "methods": [
+        {"name": "getVersion", "returns": "str"},
+        {"name": "getDocuments", "returns": "list[Document]"}
+      ],
+      "properties": [
+        {"name": "active_document", "type": "Document | None", "source": "document.getActive"},
+        {"name": "active_layer", "type": "Layer | None", "source": "layer.getActive"}
+      ]
+    },
+    {
+      "name": "document",
+      "methods": [
+        {"name": "getActive", "returns": "Document | None"},
+        {"name": "getById", "returns": "Document | None"},
+        {"name": "getLayers", "returns": "list[Layer]"},
+        {"name": "getActiveLayers", "returns": "list[Layer]"},
+        {"name": "saveAs", "returns": "Any", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "export", "returns": "Any", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "layer",
+      "methods": [
+        {"name": "getActive", "returns": "Layer | None"},
+        {"name": "getChildren", "returns": "list[Layer]"}
+      ]
+    },
+    {"name": "action", "methods": [{"name": "batchPlay", "returns": "Any", "mutatesState": true, "requiresModalWhenMutating": true}]},
+    {
+      "name": "raw",
+      "methods": [
+        {"name": "evalJs", "returns": "Any"},
+        {"name": "getPath", "returns": "Any"},
+        {"name": "callPath", "returns": "Any"}
+      ]
+    }
+  ]
+}
