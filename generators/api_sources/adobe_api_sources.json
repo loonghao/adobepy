@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sources": [
     {
       "host": "photoshop",
@@ -27,6 +27,72 @@
       "coverageNotes": [
         "Prefer DOM-backed facades before falling back to action.batchPlay.",
         "Keep JS-shaped names and Pythonic aliases for every public facade member."
+      ],
+      "coverageTargets": [
+        {
+          "name": "Application",
+          "level": "mvp",
+          "trackedBy": 6,
+          "docRefs": ["Photoshop UXP API"],
+          "irNamespaces": ["app"],
+          "facadeObjects": ["Photoshop", "PhotoshopApp"]
+        },
+        {
+          "name": "Document",
+          "level": "mvp",
+          "trackedBy": 6,
+          "docRefs": ["Photoshop UXP API"],
+          "irNamespaces": ["document"],
+          "facadeObjects": ["DocumentProxy"]
+        },
+        {
+          "name": "Layer",
+          "level": "mvp",
+          "trackedBy": 6,
+          "docRefs": ["Photoshop UXP API"],
+          "irNamespaces": ["layer"],
+          "facadeObjects": ["LayerProxy"]
+        },
+        {
+          "name": "Action and batchPlay",
+          "level": "mvp",
+          "trackedBy": 6,
+          "docRefs": ["Photoshop batchPlay"],
+          "irNamespaces": ["action"],
+          "facadeObjects": ["PhotoshopAction"]
+        },
+        {
+          "name": "Raw DOM path and JavaScript",
+          "level": "mvp",
+          "trackedBy": 6,
+          "docRefs": ["Photoshop UXP API"],
+          "irNamespaces": ["raw"],
+          "facadeObjects": ["PhotoshopDomProxy"]
+        },
+        {
+          "name": "Selection and channels",
+          "level": "planned",
+          "trackedBy": 6,
+          "docRefs": ["Photoshop UXP API"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Text and typography",
+          "level": "planned",
+          "trackedBy": 6,
+          "docRefs": ["Photoshop UXP API"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Smart objects, filters, and export presets",
+          "level": "planned",
+          "trackedBy": 6,
+          "docRefs": ["Photoshop UXP API", "Photoshop batchPlay"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        }
       ]
     },
     {
@@ -49,6 +115,48 @@
       "secondaryRefs": [],
       "coverageNotes": [
         "Track DOM-versioned UXP modules when mapping older ExtendScript examples to UXP."
+      ],
+      "coverageTargets": [
+        {
+          "name": "Application",
+          "level": "mvp",
+          "trackedBy": 7,
+          "docRefs": ["InDesign DOM APIs", "InDesign DOM reference"],
+          "irNamespaces": ["app"],
+          "facadeObjects": ["InDesign", "InDesignApp"]
+        },
+        {
+          "name": "Document",
+          "level": "mvp",
+          "trackedBy": 7,
+          "docRefs": ["InDesign DOM reference"],
+          "irNamespaces": ["document"],
+          "facadeObjects": ["DocumentProxy"]
+        },
+        {
+          "name": "Pages and spreads",
+          "level": "planned",
+          "trackedBy": 7,
+          "docRefs": ["InDesign DOM reference"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Text frames, stories, and styles",
+          "level": "planned",
+          "trackedBy": 7,
+          "docRefs": ["InDesign DOM reference"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Swatches, colors, links, and export/package workflows",
+          "level": "planned",
+          "trackedBy": 7,
+          "docRefs": ["InDesign DOM reference"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        }
       ]
     },
     {
@@ -71,6 +179,48 @@
       "secondaryRefs": [],
       "coverageNotes": [
         "Use the TypeScript declaration package as the preferred metadata source when expanding coverage."
+      ],
+      "coverageTargets": [
+        {
+          "name": "Application",
+          "level": "mvp",
+          "trackedBy": 7,
+          "docRefs": ["Premiere Pro UXP API", "Premiere Pro DOM API"],
+          "irNamespaces": ["app"],
+          "facadeObjects": ["Premiere", "PremiereApp"]
+        },
+        {
+          "name": "Project",
+          "level": "mvp",
+          "trackedBy": 7,
+          "docRefs": ["Premiere Pro DOM API"],
+          "irNamespaces": ["project"],
+          "facadeObjects": ["ProjectProxy"]
+        },
+        {
+          "name": "Sequences, tracks, clips, and markers",
+          "level": "planned",
+          "trackedBy": 7,
+          "docRefs": ["Premiere Pro DOM API"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Project items, media import, and bins",
+          "level": "planned",
+          "trackedBy": 7,
+          "docRefs": ["Premiere Pro DOM API"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Encoder/export workflows",
+          "level": "planned",
+          "trackedBy": 7,
+          "docRefs": ["Premiere Pro DOM API"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        }
       ]
     },
     {
@@ -98,6 +248,48 @@
       ],
       "coverageNotes": [
         "Treat ExtendScript as a legacy runtime and keep raw evalExtendScript separate from typed facades."
+      ],
+      "coverageTargets": [
+        {
+          "name": "Application",
+          "level": "mvp",
+          "trackedBy": 8,
+          "docRefs": ["After Effects scripts"],
+          "irNamespaces": ["app"],
+          "facadeObjects": ["AfterEffects", "AfterEffectsApp"]
+        },
+        {
+          "name": "Project",
+          "level": "mvp",
+          "trackedBy": 8,
+          "docRefs": ["After Effects scripts", "After Effects Scripting Guide mirror"],
+          "irNamespaces": ["project"],
+          "facadeObjects": ["ProjectProxy"]
+        },
+        {
+          "name": "Compositions and footage items",
+          "level": "planned",
+          "trackedBy": 8,
+          "docRefs": ["After Effects Scripting Guide mirror"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Layers, masks, effects, and text",
+          "level": "planned",
+          "trackedBy": 8,
+          "docRefs": ["After Effects Scripting Guide mirror"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Render queue and output modules",
+          "level": "planned",
+          "trackedBy": 8,
+          "docRefs": ["After Effects Scripting Guide mirror"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        }
       ]
     },
     {
@@ -125,6 +317,48 @@
       ],
       "coverageNotes": [
         "Adobe's latest Illustrator JavaScript reference may require Developer Console access; keep the mirror marked as secondary."
+      ],
+      "coverageTargets": [
+        {
+          "name": "Application",
+          "level": "mvp",
+          "trackedBy": 8,
+          "docRefs": ["Illustrator JavaScript Scripting Reference", "Illustrator Scripting Guide mirror"],
+          "irNamespaces": ["app"],
+          "facadeObjects": ["Illustrator", "IllustratorApp"]
+        },
+        {
+          "name": "Document",
+          "level": "mvp",
+          "trackedBy": 8,
+          "docRefs": ["Illustrator Scripting Guide mirror"],
+          "irNamespaces": ["document"],
+          "facadeObjects": ["DocumentProxy"]
+        },
+        {
+          "name": "Artboards, layers, and page items",
+          "level": "planned",
+          "trackedBy": 8,
+          "docRefs": ["Illustrator Scripting Guide mirror"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Path items, compound paths, and placed/raster items",
+          "level": "planned",
+          "trackedBy": 8,
+          "docRefs": ["Illustrator Scripting Guide mirror"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        },
+        {
+          "name": "Text frames, stories, swatches, colors, and export workflows",
+          "level": "planned",
+          "trackedBy": 8,
+          "docRefs": ["Illustrator Scripting Guide mirror"],
+          "irNamespaces": [],
+          "facadeObjects": []
+        }
       ]
     }
   ]

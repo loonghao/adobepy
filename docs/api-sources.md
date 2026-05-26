@@ -16,11 +16,25 @@ IR, bridge capabilities, Python facade, and Pythonic aliases.
 | After Effects | CEP/ExtendScript | `app` | [After Effects scripts](https://helpx.adobe.com/after-effects/using/scripts.html) |
 | Illustrator | CEP/ExtendScript | `app` | [Illustrator JavaScript reference](https://developer.adobe.com/console/servicesandapis) |
 
+## Current Coverage Matrix
+
+| Host | Bridge | MVP targets | Planned targets | Coverage | Next targets |
+| --- | --- | ---: | ---: | ---: | --- |
+| Photoshop | UXP | 5 | 3 | 62.5% | Selection and channels; text and typography; smart objects, filters, and export presets |
+| InDesign | UXP | 2 | 3 | 40.0% | Pages and spreads; text frames, stories, and styles; swatches, colors, links, and export/package workflows |
+| Premiere Pro | UXP | 2 | 3 | 40.0% | Sequences, tracks, clips, and markers; project items, media import, and bins; encoder/export workflows |
+| After Effects | CEP/ExtendScript | 2 | 3 | 40.0% | Compositions and footage items; layers, masks, effects, and text; render queue and output modules |
+| Illustrator | CEP/ExtendScript | 2 | 3 | 40.0% | Artboards, layers, and page items; path items, compound paths, and placed/raster items; text frames, stories, swatches, colors, and export workflows |
+
 ## Coverage Rules
 
 - Every `generators/ir/*-mvp.json` host must have exactly one API source entry.
 - Every source entry must include at least one primary Adobe reference and the
   GitHub issue numbers that track facade/API expansion.
+- Every source entry must include `coverageTargets` that separate current MVP
+  object families from planned full-coverage families.
+- MVP coverage targets must cite real IR namespaces and facade objects; planned
+  targets must stay explicit so gaps remain visible until implemented.
 - UXP hosts should prefer typed DOM APIs over raw script execution. Photoshop
   keeps `action.batchPlay` because Adobe documents it as the advanced escape
   hatch below the DOM model.
@@ -50,4 +64,12 @@ npm run api:sources:validate
 
 The validator is offline and deterministic. It checks the registry shape,
 ensures every IR host is represented, verifies source URLs are HTTPS, and
-confirms the registry points at real local IR files.
+confirms the registry points at real local IR files. It also checks that
+coverage targets reference known documentation names, GitHub tracking issues,
+and existing IR namespaces when a target is marked as MVP.
+
+Generate the current coverage matrix:
+
+```powershell
+npm run api:coverage
+```

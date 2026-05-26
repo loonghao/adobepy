@@ -52,6 +52,13 @@ Offline source-registry gate. It ensures every IR host has a tracked Adobe API
 reference entry before facade coverage expands.
 
 ```powershell
+npm run api:coverage
+```
+
+Coverage matrix report. It prints current MVP vs planned API object families
+for each Adobe host so interface expansion stays measurable.
+
+```powershell
 npm run test:replay
 ```
 
@@ -71,7 +78,7 @@ the manifest, creates the archive, and writes the SHA256 file.
 - IR contract tests: validate every `generators/ir/*.json` contract and generated
   `.pyi` output before facade or bridge code relies on it.
 - API source tests: validate the Adobe reference registry used to expand API
-  coverage and aliases.
+  coverage and aliases, including MVP/planned coverage targets per host.
 - Architecture tests: enforce shared/host ownership boundaries and alias parity
   so the facade stays extensible as new Adobe APIs are added.
 - Lint/quality gates: compile Python 3.8-compatible sources, type-check bridge
