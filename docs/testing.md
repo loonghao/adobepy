@@ -45,6 +45,14 @@ Architecture gate. It checks shared/host import direction, host package parity,
 alias pairs.
 
 ```powershell
+npm run capabilities:check
+```
+
+Bridge capability gate. It executes each UXP/CEP bridge entrypoint with a fake
+WebSocket, captures the advertised `hello.capabilities` payload, and checks it
+against the host IR and API source registry.
+
+```powershell
 npm run api:sources:validate
 ```
 
@@ -81,6 +89,8 @@ the manifest, creates the archive, and writes the SHA256 file.
   coverage and aliases, including MVP/planned coverage targets per host.
 - Architecture tests: enforce shared/host ownership boundaries and alias parity
   so the facade stays extensible as new Adobe APIs are added.
+- Capability tests: keep bridge-advertised namespaces and methods in lockstep
+  with the IR that drives Python facade and stub generation.
 - Lint/quality gates: compile Python 3.8-compatible sources, type-check bridge
   TypeScript, and run Rust format/clippy checks in CI.
 - Python facade tests: assert JS-shaped aliases and Pythonic aliases call the
