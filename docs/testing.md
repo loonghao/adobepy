@@ -129,6 +129,11 @@ the manifest, creates the archive, and writes the SHA256 file.
 - Bridge protocol tests: run bundled bridge JavaScript in Node VM contexts with
   mocked host modules and WebSocket transport, without requiring Adobe apps in
   CI.
+- Premiere export tests: mock coverage verifies EncoderManager/Exporter RPC
+  dispatch, option pass-through, capability snapshots, and normalized export job
+  metadata. A live Premiere host is still required to prove actual media output,
+  AME queue behavior, installed preset discovery, render events, and filesystem
+  permissions.
 - Packaging tests: use the package script as the final artifact smoke because it
   catches missing dist files, bridge templates, wheel metadata, and CLI build
   regressions.

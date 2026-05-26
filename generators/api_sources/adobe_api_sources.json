@@ -177,7 +177,7 @@
       "runtimeModule": "premierepro",
       "entryPoint": "require('premierepro')",
       "ir": "generators/ir/premiere-mvp.json",
-      "trackedBy": [5, 7, 15, 16],
+      "trackedBy": [5, 7, 15, 16, 17],
       "officialDocs": [
         {
           "name": "Premiere Pro UXP API",
@@ -186,6 +186,18 @@
         {
           "name": "Premiere Pro DOM API",
           "url": "https://developer.adobe.com/premiere-pro/uxp/ppro-reference/"
+        },
+        {
+          "name": "Premiere EncoderManager",
+          "url": "https://developer.adobe.com/premiere-pro/uxp/ppro_reference/classes/encodermanager/"
+        },
+        {
+          "name": "Premiere Exporter",
+          "url": "https://developer.adobe.com/premiere-pro/uxp/ppro_reference/classes/exporter/"
+        },
+        {
+          "name": "Premiere constants",
+          "url": "https://developer.adobe.com/premiere-pro/uxp/ppro-reference/constants/"
         }
       ],
       "secondaryRefs": [],
@@ -227,11 +239,11 @@
         },
         {
           "name": "Encoder/export workflows",
-          "level": "planned",
-          "trackedBy": 7,
-          "docRefs": ["Premiere Pro DOM API"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "level": "mvp",
+          "trackedBy": 17,
+          "docRefs": ["Premiere Pro DOM API", "Premiere EncoderManager", "Premiere Exporter", "Premiere constants"],
+          "irNamespaces": ["encoder", "export"],
+          "facadeObjects": ["PremiereEncoder", "PremiereExport", "EncoderPreset", "ExportJob"]
         }
       ]
     },

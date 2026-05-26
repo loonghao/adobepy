@@ -18,6 +18,11 @@ PyPI publishing uses trusted publishing. The PyPI publisher entry must point to
 repository `loonghao/adobepy`, workflow `.github/workflows/release.yml`, and
 environment `pypi`.
 
+Keep repository-level GitHub Actions workflow permissions at read-only by
+default. The release workflow grants `id-token: write` only on the PyPI publish
+job, and that job must continue to use the `pypi` environment so PyPI can verify
+the trusted publisher claim.
+
 ## PyPI Release Path
 
 The release workflow always builds and checks the Python distribution before any

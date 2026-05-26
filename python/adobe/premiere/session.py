@@ -70,6 +70,14 @@ class Premiere(PremiereSession):
     def activeSequence(self) -> "SequenceProxy | None":
         return self.active_sequence
 
+    @property
+    def encoder(self) -> "PremiereEncoder":
+        return self.app.encoder
+
+    @property
+    def export(self) -> "PremiereExport":
+        return self.app.export
+
 
 class PremiereApp:
     def __init__(self, session: PremiereSession) -> None:
@@ -105,6 +113,416 @@ class PremiereApp:
     @property
     def activeSequence(self) -> "SequenceProxy | None":
         return self.active_sequence
+
+    @property
+    def encoder(self) -> "PremiereEncoder":
+        return PremiereEncoder(self._session)
+
+    @property
+    def export(self) -> "PremiereExport":
+        return PremiereExport(self._session)
+
+
+@dataclass
+class PremiereEncoder:
+    _session: PremiereSession
+    _payload: dict[str, Any] | None = None
+
+    @property
+    def presets(self) -> list["EncoderPreset"]:
+        return self.get_presets()
+
+    @property
+    def is_ame_installed(self) -> bool | None:
+        return _optional_bool(_payload_value(self._manager_payload, "isAMEInstalled", "is_ame_installed"))
+
+    @property
+    def isAmeInstalled(self) -> bool | None:
+        return self.is_ame_installed
+
+    @property
+    def typename(self) -> str | None:
+        return self._manager_payload.get("typename")
+
+    def get_presets(self) -> list["EncoderPreset"]:
+        payload = self._session.invoke("encoder", "getPresets")
+        return [EncoderPreset(item) for item in payload or []]
+
+    def getPresets(self) -> list["EncoderPreset"]:
+        return self.get_presets()
+
+    def get_export_file_extension(
+        self,
+        sequence: "SequenceProxy | str | None",
+        preset_path: str,
+    ) -> str:
+        return str(
+            self._session.invoke(
+                "encoder",
+                "getExportFileExtension",
+                {"sequence": _sequence_key(sequence), "presetPath": preset_path},
+            )
+        )
+
+    def getExportFileExtension(self, sequence: "SequenceProxy | str | None", presetPath: str) -> str:
+        return self.get_export_file_extension(sequence, presetPath)
+
+    def encode_file(
+        self,
+        source_path: str,
+        output_path: str,
+        *,
+        preset_path: str | None = None,
+        in_point: Any = None,
+        out_point: Any = None,
+        work_area: int | None = None,
+        remove_on_completion: bool = True,
+        start_queue_immediately: bool = True,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportJob":
+        payload = _export_payload(
+            options,
+            sourcePath=source_path,
+            outputPath=output_path,
+            presetPath=preset_path,
+            inPoint=in_point,
+            outPoint=out_point,
+            workArea=work_area,
+            removeUponCompletion=remove_on_completion,
+            startQueueImmediately=start_queue_immediately,
+        )
+        job = self._session.invoke(
+            "encoder",
+            "encodeFile",
+            payload,
+            options=self._session.modal_options(
+                command_name=command_name,
+                default_command_name="Encode file",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        return ExportJob(job or {})
+
+    def encodeFile(
+        self,
+        sourcePath: str,
+        outputPath: str,
+        *,
+        presetPath: str | None = None,
+        inPoint: Any = None,
+        outPoint: Any = None,
+        workArea: int | None = None,
+        removeUponCompletion: bool = True,
+        startQueueImmediately: bool = True,
+        options: dict[str, Any] | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "ExportJob":
+        return self.encode_file(
+            sourcePath,
+            outputPath,
+            preset_path=presetPath,
+            in_point=inPoint,
+            out_point=outPoint,
+            work_area=workArea,
+            remove_on_completion=removeUponCompletion,
+            start_queue_immediately=startQueueImmediately,
+            options=options,
+            command_name=commandName,
+            timeout_ms=timeoutMs,
+        )
+
+    def encode_project_item(
+        self,
+        project_item: "ProjectItemProxy | str",
+        output_path: str,
+        *,
+        preset_path: str | None = None,
+        work_area: int | None = None,
+        remove_on_completion: bool = True,
+        start_queue_immediately: bool = True,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportJob":
+        payload = _export_payload(
+            options,
+            projectItem=_item_key(project_item),
+            outputPath=output_path,
+            presetPath=preset_path,
+            workArea=work_area,
+            removeUponCompletion=remove_on_completion,
+            startQueueImmediately=start_queue_immediately,
+        )
+        job = self._session.invoke(
+            "encoder",
+            "encodeProjectItem",
+            payload,
+            options=self._session.modal_options(
+                command_name=command_name,
+                default_command_name="Encode project item",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        return ExportJob(job or {})
+
+    def encodeProjectItem(
+        self,
+        projectItem: "ProjectItemProxy | str",
+        outputPath: str,
+        *,
+        presetPath: str | None = None,
+        workArea: int | None = None,
+        removeUponCompletion: bool = True,
+        startQueueImmediately: bool = True,
+        options: dict[str, Any] | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "ExportJob":
+        return self.encode_project_item(
+            projectItem,
+            outputPath,
+            preset_path=presetPath,
+            work_area=workArea,
+            remove_on_completion=removeUponCompletion,
+            start_queue_immediately=startQueueImmediately,
+            options=options,
+            command_name=commandName,
+            timeout_ms=timeoutMs,
+        )
+
+    def export_sequence(
+        self,
+        sequence: "SequenceProxy | str | None",
+        output_path: str | None = None,
+        *,
+        preset_path: str | None = None,
+        export_type: str | None = None,
+        export_full: bool = True,
+        remove_on_completion: bool = True,
+        start_queue_immediately: bool = True,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportJob":
+        payload = _export_payload(
+            options,
+            sequence=_sequence_key(sequence),
+            outputPath=output_path,
+            presetPath=preset_path,
+            exportType=export_type,
+            exportFull=export_full,
+            removeUponCompletion=remove_on_completion,
+            startQueueImmediately=start_queue_immediately,
+        )
+        job = self._session.invoke(
+            "encoder",
+            "exportSequence",
+            payload,
+            options=self._session.modal_options(
+                command_name=command_name,
+                default_command_name="Export sequence",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        return ExportJob(job or {})
+
+    def exportSequence(
+        self,
+        sequence: "SequenceProxy | str | None",
+        outputPath: str | None = None,
+        *,
+        presetPath: str | None = None,
+        exportType: str | None = None,
+        exportFull: bool = True,
+        removeUponCompletion: bool = True,
+        startQueueImmediately: bool = True,
+        options: dict[str, Any] | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "ExportJob":
+        return self.export_sequence(
+            sequence,
+            outputPath,
+            preset_path=presetPath,
+            export_type=exportType,
+            export_full=exportFull,
+            remove_on_completion=removeUponCompletion,
+            start_queue_immediately=startQueueImmediately,
+            options=options,
+            command_name=commandName,
+            timeout_ms=timeoutMs,
+        )
+
+    @property
+    def _manager_payload(self) -> dict[str, Any]:
+        if self._payload is None:
+            self._payload = self._session.invoke("encoder", "getManager") or {}
+        return self._payload
+
+
+@dataclass
+class PremiereExport:
+    _session: PremiereSession
+
+    def export_frame(
+        self,
+        sequence: "SequenceProxy | str | None",
+        output_path: str,
+        *,
+        time: Any = None,
+        width: int | None = None,
+        height: int | None = None,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportJob":
+        payload = _export_payload(
+            options,
+            sequence=_sequence_key(sequence),
+            outputPath=output_path,
+            time=time,
+            width=width,
+            height=height,
+        )
+        job = self._session.invoke(
+            "export",
+            "exportFrame",
+            payload,
+            options=self._session.modal_options(
+                command_name=command_name,
+                default_command_name="Export frame",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        return ExportJob(job or {})
+
+    def exportFrame(
+        self,
+        sequence: "SequenceProxy | str | None",
+        outputPath: str,
+        *,
+        time: Any = None,
+        width: int | None = None,
+        height: int | None = None,
+        options: dict[str, Any] | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "ExportJob":
+        return self.export_frame(
+            sequence,
+            outputPath,
+            time=time,
+            width=width,
+            height=height,
+            options=options,
+            command_name=commandName,
+            timeout_ms=timeoutMs,
+        )
+
+
+@dataclass
+class EncoderPreset:
+    _payload: dict[str, Any]
+
+    @property
+    def name(self) -> str | None:
+        return self._payload.get("name")
+
+    @property
+    def path(self) -> str | None:
+        return self._payload.get("path")
+
+    @property
+    def format(self) -> str | None:
+        return self._payload.get("format")
+
+    @property
+    def extension(self) -> str | None:
+        return self._payload.get("extension")
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+
+@dataclass
+class ExportJob:
+    _payload: dict[str, Any]
+
+    @property
+    def id(self) -> Any:
+        return self._payload.get("id") or self.job_id
+
+    @property
+    def job_id(self) -> Any:
+        return self._payload.get("jobId") or self._payload.get("job_id")
+
+    @property
+    def jobId(self) -> Any:
+        return self.job_id
+
+    @property
+    def status(self) -> str | None:
+        return self._payload.get("status")
+
+    @property
+    def output_path(self) -> str | None:
+        return self._payload.get("outputPath") or self._payload.get("output_path")
+
+    @property
+    def outputPath(self) -> str | None:
+        return self.output_path
+
+    @property
+    def preset_path(self) -> str | None:
+        return self._payload.get("presetPath") or self._payload.get("preset_path")
+
+    @property
+    def presetPath(self) -> str | None:
+        return self.preset_path
+
+    @property
+    def source_id(self) -> Any:
+        return self._payload.get("sourceId") or self._payload.get("source_id")
+
+    @property
+    def sourceId(self) -> Any:
+        return self.source_id
+
+    @property
+    def source_name(self) -> str | None:
+        return self._payload.get("sourceName") or self._payload.get("source_name")
+
+    @property
+    def sourceName(self) -> str | None:
+        return self.source_name
+
+    @property
+    def export_type(self) -> str | None:
+        return self._payload.get("exportType") or self._payload.get("export_type")
+
+    @property
+    def exportType(self) -> str | None:
+        return self.export_type
+
+    @property
+    def remove_on_completion(self) -> bool | None:
+        return _optional_bool(_payload_value(self._payload, "removeUponCompletion", "removeOnCompletion", "remove_on_completion"))
+
+    @property
+    def removeOnCompletion(self) -> bool | None:
+        return self.remove_on_completion
+
+    @property
+    def started(self) -> bool | None:
+        return _optional_bool(self._payload.get("started"))
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
 
 
 @dataclass
@@ -382,6 +800,30 @@ class ProjectItemProxy:
     def findItemsMatchingMediaPath(self, match: str, *, ignoreSubclips: bool = False) -> list["ProjectItemProxy"]:
         return self.find_items_matching_media_path(match, ignore_subclips=ignoreSubclips)
 
+    def encode(
+        self,
+        output_path: str,
+        *,
+        preset_path: str | None = None,
+        work_area: int | None = None,
+        remove_on_completion: bool = True,
+        start_queue_immediately: bool = True,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportJob":
+        return PremiereEncoder(self._session).encode_project_item(
+            self,
+            output_path,
+            preset_path=preset_path,
+            work_area=work_area,
+            remove_on_completion=remove_on_completion,
+            start_queue_immediately=start_queue_immediately,
+            options=options,
+            command_name=command_name,
+            timeout_ms=timeout_ms,
+        )
+
     @property
     def _item_key(self) -> Any:
         return self.id or self.tree_path or self.media_path or self.name
@@ -516,6 +958,75 @@ class SequenceProxy:
             command_name=commandName,
             timeout_ms=timeoutMs,
             **properties,
+        )
+
+    def export(
+        self,
+        output_path: str | None = None,
+        *,
+        preset_path: str | None = None,
+        export_type: str | None = None,
+        export_full: bool = True,
+        remove_on_completion: bool = True,
+        start_queue_immediately: bool = True,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportJob":
+        return PremiereEncoder(self._session).export_sequence(
+            self,
+            output_path,
+            preset_path=preset_path,
+            export_type=export_type,
+            export_full=export_full,
+            remove_on_completion=remove_on_completion,
+            start_queue_immediately=start_queue_immediately,
+            options=options,
+            command_name=command_name,
+            timeout_ms=timeout_ms,
+        )
+
+    def export_frame(
+        self,
+        output_path: str,
+        *,
+        time: Any = None,
+        width: int | None = None,
+        height: int | None = None,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportJob":
+        return PremiereExport(self._session).export_frame(
+            self,
+            output_path,
+            time=time,
+            width=width,
+            height=height,
+            options=options,
+            command_name=command_name,
+            timeout_ms=timeout_ms,
+        )
+
+    def exportFrame(
+        self,
+        outputPath: str,
+        *,
+        time: Any = None,
+        width: int | None = None,
+        height: int | None = None,
+        options: dict[str, Any] | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "ExportJob":
+        return self.export_frame(
+            outputPath,
+            time=time,
+            width=width,
+            height=height,
+            options=options,
+            command_name=commandName,
+            timeout_ms=timeoutMs,
         )
 
     @property
@@ -731,3 +1242,37 @@ def _item_key(item: "ProjectItemProxy | str | None") -> Any:
     if isinstance(item, ProjectItemProxy):
         return item.id or item.tree_path or item.media_path or item.name
     return item
+
+
+def _sequence_key(sequence: "SequenceProxy | str | None") -> Any:
+    if isinstance(sequence, SequenceProxy):
+        return sequence.id or sequence.sequence_id or sequence.name
+    return sequence
+
+
+def _export_payload(options: dict[str, Any] | None = None, **values: Any) -> dict[str, Any]:
+    payload = dict(options or {})
+    for key, value in values.items():
+        if value is not None:
+            payload[key] = value
+    return payload
+
+
+def _optional_bool(value: Any) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        if value.lower() == "true":
+            return True
+        if value.lower() == "false":
+            return False
+    return None
+
+
+def _payload_value(payload: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        if key in payload:
+            return payload[key]
+    return None

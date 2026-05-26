@@ -9,7 +9,9 @@
         {"name": "active_project", "type": "Project | None", "source": "project.getActive"},
         {"name": "project", "type": "Project | None", "source": "project.getActive"},
         {"name": "sequences", "type": "list[Sequence]", "source": "project.getSequences"},
-        {"name": "active_sequence", "type": "Sequence | None", "source": "project.getActiveSequence"}
+        {"name": "active_sequence", "type": "Sequence | None", "source": "project.getActiveSequence"},
+        {"name": "encoder", "type": "PremiereEncoder", "source": "encoder.getManager"},
+        {"name": "export", "type": "PremiereExport", "source": "export.getExporter"}
       ]
     },
     {
@@ -45,6 +47,24 @@
       "methods": [
         {"name": "getMarkers", "returns": "list[Marker]"},
         {"name": "create", "returns": "Marker", "mutates": true, "modal": true}
+      ]
+    },
+    {
+      "name": "encoder",
+      "methods": [
+        {"name": "getManager", "returns": "PremiereEncoder"},
+        {"name": "getPresets", "returns": "list[EncoderPreset]"},
+        {"name": "getExportFileExtension", "returns": "str"},
+        {"name": "encodeFile", "returns": "ExportJob", "mutates": true, "modal": true},
+        {"name": "encodeProjectItem", "returns": "ExportJob", "mutates": true, "modal": true},
+        {"name": "exportSequence", "returns": "ExportJob", "mutates": true, "modal": true}
+      ]
+    },
+    {
+      "name": "export",
+      "methods": [
+        {"name": "getExporter", "returns": "PremiereExport"},
+        {"name": "exportFrame", "returns": "ExportJob", "mutates": true, "modal": true}
       ]
     },
     {"name": "raw", "methods": [{"name": "evalJs", "returns": "Any", "raw": true}]}
@@ -90,7 +110,8 @@
       ],
       "methods": [
         {"name": "createBin", "returns": "ProjectItem"},
-        {"name": "findItemsMatchingMediaPath", "returns": "list[ProjectItem]"}
+        {"name": "findItemsMatchingMediaPath", "returns": "list[ProjectItem]"},
+        {"name": "encode", "returns": "ExportJob"}
       ]
     },
     {
@@ -107,7 +128,11 @@
         {"name": "markers", "type": "list[Marker]", "source": "marker.getMarkers"},
         {"name": "selected_clips", "type": "list[Clip]", "source": "clip.getSelected"}
       ],
-      "methods": [{"name": "createMarker", "returns": "Marker"}]
+      "methods": [
+        {"name": "createMarker", "returns": "Marker"},
+        {"name": "export", "returns": "ExportJob"},
+        {"name": "exportFrame", "returns": "ExportJob"}
+      ]
     },
     {
       "name": "TrackProxy",
@@ -150,6 +175,51 @@
         {"name": "end", "type": "Any"},
         {"name": "duration", "type": "Any"},
         {"name": "marker_type", "type": "str | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "PremiereEncoder",
+      "properties": [
+        {"name": "presets", "type": "list[EncoderPreset]"},
+        {"name": "is_ame_installed", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ],
+      "methods": [
+        {"name": "getPresets", "returns": "list[EncoderPreset]"},
+        {"name": "getExportFileExtension", "returns": "str"},
+        {"name": "encodeFile", "returns": "ExportJob"},
+        {"name": "encodeProjectItem", "returns": "ExportJob"},
+        {"name": "exportSequence", "returns": "ExportJob"}
+      ]
+    },
+    {
+      "name": "PremiereExport",
+      "methods": [{"name": "exportFrame", "returns": "ExportJob"}]
+    },
+    {
+      "name": "EncoderPreset",
+      "properties": [
+        {"name": "name", "type": "str | None"},
+        {"name": "path", "type": "str | None"},
+        {"name": "format", "type": "str | None"},
+        {"name": "extension", "type": "str | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "ExportJob",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "job_id", "type": "Any"},
+        {"name": "status", "type": "str | None"},
+        {"name": "output_path", "type": "str | None"},
+        {"name": "preset_path", "type": "str | None"},
+        {"name": "source_id", "type": "Any"},
+        {"name": "source_name", "type": "str | None"},
+        {"name": "export_type", "type": "str | None"},
+        {"name": "remove_on_completion", "type": "bool | None"},
+        {"name": "started", "type": "bool | None"},
         {"name": "typename", "type": "str | None"}
       ]
     }

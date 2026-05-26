@@ -359,6 +359,59 @@ class CapturingClient:
                 return [marker]
             if method == "create":
                 return {**marker, **args[1], "id": "marker-2"}
+        if host == "premiere" and namespace == "encoder":
+            if method == "getManager":
+                return {"isAMEInstalled": True, "typename": "EncoderManager"}
+            if method == "getPresets":
+                return [
+                    {
+                        "name": "H.264 Match Source",
+                        "path": "C:/presets/h264.epr",
+                        "format": "H.264",
+                        "extension": "mp4",
+                        "typename": "EncoderPreset",
+                    }
+                ]
+            if method == "getExportFileExtension":
+                return "mp4"
+            if method == "encodeFile":
+                return {
+                    "jobId": "job-file",
+                    "status": "queued",
+                    "outputPath": args[0]["outputPath"],
+                    "presetPath": args[0]["presetPath"],
+                    "sourceName": args[0]["sourcePath"],
+                    "removeUponCompletion": args[0]["removeUponCompletion"],
+                    "typename": "ExportJob",
+                }
+            if method == "encodeProjectItem":
+                return {
+                    "jobId": "job-item",
+                    "status": "queued",
+                    "outputPath": args[0]["outputPath"],
+                    "presetPath": args[0]["presetPath"],
+                    "sourceId": args[0]["projectItem"],
+                    "typename": "ExportJob",
+                }
+            if method == "exportSequence":
+                return {
+                    "jobId": "job-sequence",
+                    "status": "queued",
+                    "outputPath": args[0]["outputPath"],
+                    "presetPath": args[0]["presetPath"],
+                    "sourceId": args[0]["sequence"],
+                    "exportType": args[0]["exportType"],
+                    "typename": "ExportJob",
+                }
+        if host == "premiere" and namespace == "export":
+            if method == "exportFrame":
+                return {
+                    "jobId": "job-frame",
+                    "status": "exported",
+                    "outputPath": args[0]["outputPath"],
+                    "sourceId": args[0]["sequence"],
+                    "typename": "ExportJob",
+                }
         if namespace == "project":
             return {"name": "cut", "path": "C:/cut", "itemCount": 3}
         return {"ok": True}
@@ -617,6 +670,25 @@ class FacadeTests(unittest.TestCase):
         imported = premiere.project.import_files("C:/media/new.mov", target_bin=root, command_name="Import")
         self.assertEqual(imported[0].parentId, "root")
         self.assertEqual(imported[0].mediaPath, "C:/media/new.mov")
+        self.assertTrue(premiere.encoder.is_ame_installed)
+        self.assertEqual(premiere.encoder.presets[0].format, "H.264")
+        self.assertEqual(premiere.encoder.get_export_file_extension(sequence, "C:/presets/h264.epr"), "mp4")
+        self.assertEqual(
+            premiere.encoder.encode_file(
+                "C:/media/source.mov",
+                "C:/out/source.mp4",
+                preset_path="C:/presets/h264.epr",
+                options={"workArea": 0},
+                command_name="Encode File",
+            ).jobId,
+            "job-file",
+        )
+        self.assertEqual(premiere_client.calls[-1]["args"][0]["workArea"], 0)
+        self.assertEqual(premiere_client.calls[-1]["options"]["commandName"], "Encode File")
+        self.assertEqual(media_item.encode("C:/out/shot.mp4", preset_path="C:/presets/h264.epr").sourceId, "media-1")
+        self.assertEqual(sequence.export("C:/out/main.mp4", preset_path="C:/presets/h264.epr", export_type="QUEUE_TO_AME").exportType, "QUEUE_TO_AME")
+        self.assertEqual(sequence.export_frame("C:/out/frame.png", time=42).status, "exported")
+        self.assertEqual(premiere.export.exportFrame(sequence, "C:/out/frame2.png", time=43).outputPath, "C:/out/frame2.png")
 
     def test_legacy_cep_facades(self):
         ae = AfterEffects(client=CapturingClient())

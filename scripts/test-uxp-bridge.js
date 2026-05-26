@@ -603,9 +603,52 @@ async function testPremiereBridge() {
       return true;
     }
   };
+  const encoderPresets = [{ name: "H.264 Match Source", path: "C:/presets/h264.epr", format: "H.264", extension: "mp4", typename: "EncoderPreset" }];
+  const encoderManager = {
+    isAMEInstalled: true,
+    typename: "EncoderManager",
+    getPresets() {
+      return encoderPresets;
+    },
+    encodeFile(sourcePath, outputPath, presetPath, inPoint, outPoint, workArea, removeUponCompletion, startQueueImmediately) {
+      events.push({ kind: "encoder.encodeFile", sourcePath, outputPath, presetPath, inPoint, outPoint, workArea, removeUponCompletion, startQueueImmediately });
+      return { jobId: "job-file", status: "queued" };
+    },
+    encodeProjectItem(projectItem, outputPath, presetPath, workArea, removeUponCompletion, startQueueImmediately) {
+      events.push({ kind: "encoder.encodeProjectItem", projectItem: projectItem.id, outputPath, presetPath, workArea, removeUponCompletion, startQueueImmediately });
+      return { jobId: "job-item", status: "queued" };
+    },
+    exportSequence(sequenceToExport, exportType, outputPath, presetPath, exportFull, removeUponCompletion, startQueueImmediately) {
+      events.push({ kind: "encoder.exportSequence", sequence: sequenceToExport.id, exportType, outputPath, presetPath, exportFull, removeUponCompletion, startQueueImmediately });
+      return { jobId: "job-sequence", status: "queued" };
+    }
+  };
+  const exporter = {
+    exportSequenceFrame(sequenceToExport, time, filename, filepath, width, height) {
+      events.push({ kind: "export.frame", sequence: sequenceToExport.id, time, filename, filepath, width, height });
+      return { jobId: "job-frame", status: "exported" };
+    }
+  };
   const env = await loadBundle("bridges/uxp/premiere/dist/main.js", {
     premierepro: {
       version: "25.6.0",
+      constants: {
+        ExportType: {
+          IMMEDIATELY: "IMMEDIATELY",
+          QUEUE_TO_AME: "QUEUE_TO_AME",
+          QUEUE_TO_APP: "QUEUE_TO_APP"
+        }
+      },
+      EncoderManager: {
+        getManager() {
+          return encoderManager;
+        },
+        getExportFileExtension(sequenceToExport, presetPath) {
+          events.push({ kind: "encoder.extension", sequence: sequenceToExport.id, presetPath });
+          return "mp4";
+        }
+      },
+      Exporter: exporter,
       ProjectUtils: {
         getSelection(activeProject) {
           assert.strictEqual(activeProject, project);
@@ -628,6 +671,8 @@ async function testPremiereBridge() {
   assert.ok(env.sent[0].capabilities.methods.projectItem.includes("getChildren"));
   assert.ok(env.sent[0].capabilities.methods.bin.includes("create"));
   assert.ok(env.sent[0].capabilities.methods.marker.includes("create"));
+  assert.ok(env.sent[0].capabilities.methods.encoder.includes("exportSequence"));
+  assert.ok(env.sent[0].capabilities.methods.export.includes("exportFrame"));
   assert.strictEqual(result(await rpc(env, "premiere", "app", "getVersion")), "25.6.0");
   assert.deepStrictEqual(result(await rpc(env, "premiere", "project", "getActive")), {
     id: "project-1",
@@ -660,7 +705,42 @@ async function testPremiereBridge() {
   assert.strictEqual(imported[0].mediaPath, "C:/media/new.mov");
   assert.ok(events.some((event) => event.kind === "project.importFiles" && event.targetBin === "bin-1"));
   assert.strictEqual(error(await rpc(env, "premiere", "project", "importFiles", [{ filePaths: [] }])).code, -32004);
+  assert.strictEqual(result(await rpc(env, "premiere", "encoder", "getManager")).isAMEInstalled, true);
+  assert.strictEqual(result(await rpc(env, "premiere", "encoder", "getPresets"))[0].path, "C:/presets/h264.epr");
+  assert.strictEqual(result(await rpc(env, "premiere", "encoder", "getExportFileExtension", [{ sequence: "seq-1", presetPath: "C:/presets/h264.epr" }])), "mp4");
+  const fileJob = result(
+    await rpc(env, "premiere", "encoder", "encodeFile", [
+      {
+        sourcePath: "C:/media/source.mov",
+        outputPath: "C:/out/source.mp4",
+        presetPath: "C:/presets/h264.epr",
+        workArea: 0,
+        removeUponCompletion: false,
+        startQueueImmediately: true
+      }
+    ])
+  );
+  assert.strictEqual(fileJob.jobId, "job-file");
+  assert.strictEqual(fileJob.outputPath, "C:/out/source.mp4");
+  assert.strictEqual(fileJob.removeUponCompletion, false);
+  const itemJob = result(await rpc(env, "premiere", "encoder", "encodeProjectItem", [{ projectItemId: "media-1", outputPath: "C:/out/shot.mp4", presetPath: "C:/presets/h264.epr" }]));
+  assert.strictEqual(itemJob.sourceName, "shot.mov");
+  const sequenceJob = result(await rpc(env, "premiere", "encoder", "exportSequence", [{ sequence: "seq-1", outputPath: "C:/out/main.mp4", presetPath: "C:/presets/h264.epr", exportType: "QUEUE_TO_AME" }]));
+  assert.strictEqual(sequenceJob.exportType, "QUEUE_TO_AME");
+  const frameJob = result(await rpc(env, "premiere", "export", "exportFrame", [{ sequence: "seq-1", outputPath: "C:/out/frame.png", time: 42, width: 1920, height: 1080 }]));
+  assert.strictEqual(frameJob.status, "exported");
+  assert.strictEqual(error(await rpc(env, "premiere", "encoder", "encodeFile", [{ sourcePath: "C:/media/source.mov" }])).code, -32004);
   assert.strictEqual(result(await rpc(env, "premiere", "raw", "evalJs", ["6 * 7"])), 42);
+  assert.ok(events.some((event) => event.kind === "encoder.extension" && event.presetPath === "C:/presets/h264.epr"));
+  assert.ok(events.some((event) => event.kind === "encoder.encodeFile" && event.workArea === 0 && event.removeUponCompletion === false));
+  assert.ok(events.some((event) => event.kind === "encoder.encodeProjectItem" && event.projectItem === "media-1"));
+  assert.ok(events.some((event) => event.kind === "encoder.exportSequence" && event.exportType === "QUEUE_TO_AME"));
+  assert.ok(events.some((event) => event.kind === "export.frame" && event.filename === "C:/out/frame.png" && event.filepath === "C:/out/"));
+
+  const unavailableEnv = await loadBundle("bridges/uxp/premiere/dist/main.js", {
+    premierepro: { version: "25.6.0" }
+  });
+  assert.strictEqual(error(await rpc(unavailableEnv, "premiere", "encoder", "encodeFile", [{ sourcePath: "C:/media/source.mov", outputPath: "C:/out/source.mp4" }])).code, -32004);
 }
 
 function testManifestPermissions() {

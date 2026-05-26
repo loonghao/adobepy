@@ -12,8 +12,8 @@ export const premiereAdapter: HostAdapter = {
       bridgeKind: "uxp",
       bridgeVersion: "0.1.0",
       hostVersion: premiereVersion(),
-      namespaces: ["app", "project", "sequence", "track", "clip", "projectItem", "bin", "marker", "raw"],
-      features: ["project", "sequence", "track", "clip", "projectItem", "bin", "marker"],
+      namespaces: ["app", "project", "sequence", "track", "clip", "projectItem", "bin", "marker", "encoder", "export", "raw"],
+      features: ["project", "sequence", "track", "clip", "projectItem", "bin", "marker", "encoder", "export"],
       methods: {
         app: ["getVersion"],
         project: ["getActive", "getSequences", "getActiveSequence", "getRootItem", "importFiles"],
@@ -23,6 +23,8 @@ export const premiereAdapter: HostAdapter = {
         projectItem: ["getChildren", "getSelected", "findByMediaPath"],
         bin: ["create"],
         marker: ["getMarkers", "create"],
+        encoder: ["getManager", "getPresets", "getExportFileExtension", "encodeFile", "encodeProjectItem", "exportSequence"],
+        export: ["getExporter", "exportFrame"],
         raw: ["evalJs"]
       }
     };
@@ -48,6 +50,14 @@ export const premiereAdapter: HostAdapter = {
     if (request.namespace === "bin" && request.method === "create") return createBin(request);
     if (request.namespace === "marker" && request.method === "getMarkers") return sequenceMarkers(await requireSequence(request.args?.[0]));
     if (request.namespace === "marker" && request.method === "create") return createMarker(request);
+    if (request.namespace === "encoder" && request.method === "getManager") return serializeEncoderManager(await encoderManager());
+    if (request.namespace === "encoder" && request.method === "getPresets") return encoderPresets();
+    if (request.namespace === "encoder" && request.method === "getExportFileExtension") return getExportFileExtension(request);
+    if (request.namespace === "encoder" && request.method === "encodeFile") return encodeFile(request);
+    if (request.namespace === "encoder" && request.method === "encodeProjectItem") return encodeProjectItem(request);
+    if (request.namespace === "encoder" && request.method === "exportSequence") return exportSequence(request);
+    if (request.namespace === "export" && request.method === "getExporter") return serializeExporter(await exporterApi());
+    if (request.namespace === "export" && request.method === "exportFrame") return exportFrame(request);
     if (request.namespace === "raw" && request.method === "evalJs") return evalJavaScript(asString(request.args?.[0]) ?? "", request.args?.slice(1) ?? []);
     methodNotFound(request.namespace, request.method);
   }
@@ -366,6 +376,234 @@ function serializeMarker(marker: unknown) {
     markerType: asString(property(marker, "markerType")) ?? asString(property(marker, "marker_type")),
     typename: asString(property(marker, "typename")) ?? asString(property(marker, "typeName"))
   };
+}
+
+async function encoderManager() {
+  const encoderApi = property(premiereModule(), "EncoderManager") ?? property(premiereModule(), "encoderManager");
+  if (!encoderApi) unavailable("Premiere EncoderManager");
+  const getManager = property<Callable>(encoderApi, "getManager");
+  const manager = getManager ? await maybePromise(getManager.call(encoderApi)) : encoderApi;
+  if (!manager) unavailable("Premiere EncoderManager");
+  return manager;
+}
+
+async function exporterApi() {
+  const exporter = property(premiereModule(), "Exporter") ?? property(premiereModule(), "exporter");
+  if (!exporter) unavailable("Premiere Exporter");
+  return exporter;
+}
+
+function serializeEncoderManager(manager: unknown) {
+  if (!isObject(manager)) return {};
+  return {
+    isAMEInstalled: booleanValue(property(manager, "isAMEInstalled")),
+    typename: asString(property(manager, "typename")) ?? "EncoderManager"
+  };
+}
+
+function serializeExporter(exporter: unknown) {
+  if (!isObject(exporter)) return {};
+  return {
+    typename: asString(property(exporter, "typename")) ?? "Exporter"
+  };
+}
+
+async function encoderPresets() {
+  const manager = await encoderManager();
+  const getPresets = property<Callable>(manager, "getPresets") ?? property<Callable>(manager, "getPresetList");
+  const rawPresets = getPresets ? await maybePromise(getPresets.call(manager)) : property(manager, "presets");
+  return collectionItems(rawPresets).map(serializeEncoderPreset);
+}
+
+async function getExportFileExtension(request: RpcRequest) {
+  const payload = requestPayload(request);
+  const presetPath = requiredPath(property(payload, "presetPath") ?? property(payload, "preset_path") ?? property(payload, "presetFile") ?? property(payload, "preset_file"), "Premiere encoder preset file");
+  const sequence = await requireSequence(property(payload, "sequence") ?? property(payload, "sequenceId") ?? property(payload, "sequence_id"));
+  const encoderApi = property(premiereModule(), "EncoderManager") ?? property(premiereModule(), "encoderManager");
+  const manager = await encoderManager();
+  const staticGetExtension = property<Callable>(encoderApi, "getExportFileExtension");
+  const managerGetExtension = property<Callable>(manager, "getExportFileExtension");
+  const getExtension = staticGetExtension ?? managerGetExtension;
+  if (!getExtension) unavailable("Premiere EncoderManager.getExportFileExtension");
+  return await maybePromise(getExtension.call(staticGetExtension ? encoderApi : manager, sequence, presetPath));
+}
+
+async function encodeFile(request: RpcRequest) {
+  const payload = requestPayload(request);
+  const sourcePath = requiredPath(
+    property(payload, "sourcePath") ?? property(payload, "source_path") ?? property(payload, "filePath") ?? property(payload, "file_path") ?? property(payload, "inputPath") ?? property(payload, "input_path"),
+    "Premiere encode source file"
+  );
+  const outputPath = requiredPath(property(payload, "outputPath") ?? property(payload, "output_path") ?? property(payload, "outputFile") ?? property(payload, "output_file") ?? property(payload, "path"), "Premiere encode output file");
+  const presetPath = optionalPath(property(payload, "presetPath") ?? property(payload, "preset_path") ?? property(payload, "presetFile") ?? property(payload, "preset_file") ?? property(payload, "preset"));
+  const manager = await encoderManager();
+  const encode = property<Callable>(manager, "encodeFile");
+  if (!encode) unavailable("Premiere EncoderManager.encodeFile");
+  const result = await maybePromise(
+    encode.call(
+      manager,
+      sourcePath,
+      outputPath,
+      presetPath,
+      property(payload, "inPoint") ?? property(payload, "in_point"),
+      property(payload, "outPoint") ?? property(payload, "out_point"),
+      property(payload, "workArea") ?? property(payload, "work_area"),
+      booleanValue(property(payload, "removeUponCompletion") ?? property(payload, "removeOnCompletion") ?? property(payload, "remove_on_completion")) ?? true,
+      booleanValue(property(payload, "startQueueImmediately") ?? property(payload, "start_queue_immediately")) ?? true
+    )
+  );
+  return serializeExportJob(result, { ...payload, sourcePath, outputPath, presetPath }, "encodeFile");
+}
+
+async function encodeProjectItem(request: RpcRequest) {
+  const payload = requestPayload(request);
+  const projectItemId =
+    property(payload, "projectItem") ??
+    property(payload, "project_item") ??
+    property(payload, "projectItemId") ??
+    property(payload, "project_item_id") ??
+    property(payload, "sourceId") ??
+    property(payload, "source_id");
+  const projectItem = await requireProjectItem(projectItemId);
+  const outputPath = requiredPath(property(payload, "outputPath") ?? property(payload, "output_path") ?? property(payload, "outputFile") ?? property(payload, "output_file") ?? property(payload, "path"), "Premiere encode output file");
+  const presetPath = optionalPath(property(payload, "presetPath") ?? property(payload, "preset_path") ?? property(payload, "presetFile") ?? property(payload, "preset_file") ?? property(payload, "preset"));
+  const manager = await encoderManager();
+  const encode = property<Callable>(manager, "encodeProjectItem");
+  if (!encode) unavailable("Premiere EncoderManager.encodeProjectItem");
+  const result = await maybePromise(
+    encode.call(
+      manager,
+      projectItem,
+      outputPath,
+      presetPath,
+      property(payload, "workArea") ?? property(payload, "work_area"),
+      booleanValue(property(payload, "removeUponCompletion") ?? property(payload, "removeOnCompletion") ?? property(payload, "remove_on_completion")) ?? true,
+      booleanValue(property(payload, "startQueueImmediately") ?? property(payload, "start_queue_immediately")) ?? true
+    )
+  );
+  return serializeExportJob(result, { ...payload, outputPath, presetPath }, "encodeProjectItem", projectItem);
+}
+
+async function exportSequence(request: RpcRequest) {
+  const payload = requestPayload(request);
+  const sequence = await requireSequence(property(payload, "sequence") ?? property(payload, "sequenceId") ?? property(payload, "sequence_id"));
+  const outputPath = optionalPath(property(payload, "outputPath") ?? property(payload, "output_path") ?? property(payload, "outputFile") ?? property(payload, "output_file") ?? property(payload, "path"));
+  const presetPath = optionalPath(property(payload, "presetPath") ?? property(payload, "preset_path") ?? property(payload, "presetFile") ?? property(payload, "preset_file") ?? property(payload, "preset"));
+  const manager = await encoderManager();
+  const exportSequenceMethod = property<Callable>(manager, "exportSequence");
+  if (!exportSequenceMethod) unavailable("Premiere EncoderManager.exportSequence");
+  const exportType = resolveExportType(property(payload, "exportType") ?? property(payload, "export_type"));
+  const result = await maybePromise(
+    exportSequenceMethod.call(
+      manager,
+      sequence,
+      exportType,
+      outputPath,
+      presetPath,
+      booleanValue(property(payload, "exportFull") ?? property(payload, "export_full")) ?? true,
+      booleanValue(property(payload, "removeUponCompletion") ?? property(payload, "removeOnCompletion") ?? property(payload, "remove_on_completion")) ?? true,
+      booleanValue(property(payload, "startQueueImmediately") ?? property(payload, "start_queue_immediately")) ?? true
+    )
+  );
+  return serializeExportJob(result, { ...payload, outputPath, presetPath, exportType: exportTypeName(exportType) }, "exportSequence", sequence);
+}
+
+async function exportFrame(request: RpcRequest) {
+  const payload = requestPayload(request);
+  const sequence = await requireSequence(property(payload, "sequence") ?? property(payload, "sequenceId") ?? property(payload, "sequence_id"));
+  const outputPath = requiredPath(property(payload, "outputPath") ?? property(payload, "output_path") ?? property(payload, "filename") ?? property(payload, "path"), "Premiere frame output file");
+  const exporter = await exporterApi();
+  const exportSequenceFrame = property<Callable>(exporter, "exportSequenceFrame");
+  if (!exportSequenceFrame) unavailable("Premiere Exporter.exportSequenceFrame");
+  const outputDirectory = asString(property(payload, "filepath")) ?? asString(property(payload, "filePath")) ?? parentDirectory(outputPath);
+  const result = await maybePromise(
+    exportSequenceFrame.call(
+      exporter,
+      sequence,
+      property(payload, "time") ?? property(payload, "tickTime") ?? property(payload, "tick_time"),
+      outputPath,
+      outputDirectory,
+      asNumber(property(payload, "width")),
+      asNumber(property(payload, "height"))
+    )
+  );
+  return serializeExportJob(result, { ...payload, outputPath }, "exportFrame", sequence);
+}
+
+function serializeEncoderPreset(preset: unknown) {
+  if (!isObject(preset)) {
+    const path = asString(preset);
+    return {
+      name: path?.split(/[\\/]/).filter(Boolean).pop() ?? path,
+      path,
+      format: undefined,
+      extension: path?.split(".").pop(),
+      typename: "EncoderPreset"
+    };
+  }
+  const path = asString(property(preset, "path")) ?? asString(property(preset, "presetPath")) ?? asString(property(preset, "filePath"));
+  return {
+    name: asString(property(preset, "name")) ?? path?.split(/[\\/]/).filter(Boolean).pop(),
+    path,
+    format: asString(property(preset, "format")),
+    extension: asString(property(preset, "extension")) ?? path?.split(".").pop(),
+    typename: asString(property(preset, "typename")) ?? asString(property(preset, "typeName")) ?? "EncoderPreset"
+  };
+}
+
+function serializeExportJob(result: unknown, payload: Record<string, unknown>, kind: string, source?: unknown) {
+  const resultObject = isObject(result) ? result : {};
+  const resultJobId = property(resultObject, "jobId") ?? property(resultObject, "jobID") ?? property(resultObject, "id");
+  const jobId = resultJobId ?? (typeof result === "string" || typeof result === "number" ? result : undefined);
+  const started = typeof result === "boolean" ? result : booleanValue(property(resultObject, "started") ?? property(resultObject, "success") ?? property(resultObject, "ok"));
+  return {
+    id: jobId,
+    jobId,
+    status: asString(property(resultObject, "status")) ?? (started === false ? "failed" : kind === "exportFrame" ? "exported" : "queued"),
+    outputPath: asString(property(resultObject, "outputPath")) ?? asString(property(resultObject, "outputFile")) ?? asString(property(payload, "outputPath")),
+    presetPath: asString(property(resultObject, "presetPath")) ?? asString(property(resultObject, "presetFile")) ?? asString(property(payload, "presetPath")),
+    sourceId: property(resultObject, "sourceId") ?? projectItemId(source) ?? property(source, "id") ?? property(payload, "sourcePath"),
+    sourceName: asString(property(resultObject, "sourceName")) ?? asString(property(source, "name")) ?? asString(property(payload, "sourcePath")),
+    exportType: asString(property(resultObject, "exportType")) ?? asString(property(payload, "exportType")),
+    removeUponCompletion: booleanValue(property(resultObject, "removeUponCompletion") ?? property(payload, "removeUponCompletion") ?? property(payload, "removeOnCompletion") ?? property(payload, "remove_on_completion")),
+    started,
+    typename: asString(property(resultObject, "typename")) ?? "ExportJob"
+  };
+}
+
+function requestPayload(request: RpcRequest): Record<string, unknown> {
+  const first = request.args?.[0];
+  return isObject(first) ? first : {};
+}
+
+function requiredPath(value: unknown, label: string): string {
+  const path = asString(value);
+  if (!path) unavailable(label);
+  return path;
+}
+
+function optionalPath(value: unknown): string | undefined {
+  return asString(value);
+}
+
+function resolveExportType(value: unknown): unknown {
+  if (value === undefined || value === null) return value;
+  const name = asString(value);
+  if (!name) return value;
+  const exportTypes = property(property(premiereModule(), "constants"), "ExportType");
+  return property(exportTypes, name) ?? property(exportTypes, name.toUpperCase()) ?? value;
+}
+
+function exportTypeName(value: unknown): string | undefined {
+  const raw = asString(value);
+  if (raw) return raw;
+  if (value === undefined || value === null) return undefined;
+  return String(value);
+}
+
+function parentDirectory(outputPath: string): string {
+  const index = Math.max(outputPath.lastIndexOf("/"), outputPath.lastIndexOf("\\"));
+  return index > 0 ? outputPath.slice(0, index + 1) : "";
 }
 
 function serializeProjectItems(items: unknown[]) {
