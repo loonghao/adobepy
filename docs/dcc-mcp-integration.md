@@ -100,6 +100,10 @@ Helper mapping:
 | `ps_error(...)` / `ps_from_exception(...)` | `adobe_error(...)` / `adobe_exception(...)` |
 | `with_photoshop` | `with_adobe("Photoshop skill failed")` |
 
+The full `ps.*` method-family map is tracked in
+[`docs/dcc-mcp-photoshop-method-map.md`](dcc-mcp-photoshop-method-map.md) and
+checked by `python/tests/test_dcc_mcp_photoshop_method_map.py`.
+
 Before calling a method family that may depend on bridge version, gate it with
 capabilities instead of probing private bridge state:
 

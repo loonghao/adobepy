@@ -25,6 +25,7 @@
     "api:sources:validate": "python scripts/validate_api_sources.py",
     "api:coverage": "python scripts/report_api_coverage.py",
     "capabilities:check": "node scripts/check-bridge-capabilities.js",
+    "smoke:photoshop:live": "python scripts/live_photoshop_smoke.py",
     "lint:python": "python -m compileall -q python generators scripts && npm run protocol:check && npm run architecture:check && npm run stubs:check && npm run api:sources:validate",
     "lint:typescript": "npm run bridge:check",
     "lint:rust": "cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings",

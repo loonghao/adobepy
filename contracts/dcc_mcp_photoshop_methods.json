@@ -1,0 +1,194 @@
+{
+  "source": "loonghao/dcc-mcp-photoshop DEFAULT_PHOTOSHOP_METHODS snapshot",
+  "methods": [
+    {
+      "legacyMethod": "ps.getDocumentInfo",
+      "family": "document",
+      "route": "typed_facade",
+      "adobepy": "Photoshop().activeDocument / active_document",
+      "modalPolicy": "not_required"
+    },
+    {
+      "legacyMethod": "ps.listDocuments",
+      "family": "document",
+      "route": "typed_facade",
+      "adobepy": "Photoshop().documents",
+      "modalPolicy": "not_required"
+    },
+    {
+      "legacyMethod": "ps.createDocument",
+      "family": "document",
+      "route": "dom_escape_hatch",
+      "adobepy": "Photoshop().dom.app.documents.add({...}, modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.saveDocument",
+      "family": "document",
+      "route": "dom_escape_hatch",
+      "adobepy": "Photoshop().dom.app.activeDocument.save(modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.closeDocument",
+      "family": "document",
+      "route": "dom_escape_hatch",
+      "adobepy": "Photoshop().dom.app.activeDocument.close(..., modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.exportDocument",
+      "family": "document",
+      "route": "typed_facade",
+      "adobepy": "Photoshop().activeDocument.export(...) / export_with_preset(...)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.resizeCanvas",
+      "family": "image",
+      "route": "dom_escape_hatch",
+      "adobepy": "Photoshop().dom.app.activeDocument.resizeCanvas(..., modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.resizeImage",
+      "family": "image",
+      "route": "dom_escape_hatch",
+      "adobepy": "Photoshop().dom.app.activeDocument.resizeImage(..., modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.flattenImage",
+      "family": "image",
+      "route": "dom_escape_hatch",
+      "adobepy": "Photoshop().dom.app.activeDocument.flatten(..., modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.mergeVisibleLayers",
+      "family": "image",
+      "route": "dom_escape_hatch",
+      "adobepy": "Photoshop().dom.app.activeDocument.mergeVisibleLayers(..., modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.listLayers",
+      "family": "layer",
+      "route": "typed_facade",
+      "adobepy": "Photoshop().activeLayers / activeDocument.layers",
+      "modalPolicy": "not_required"
+    },
+    {
+      "legacyMethod": "ps.createLayer",
+      "family": "layer",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play([{_obj: 'make', _target: [{_ref: 'layer'}]}], modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.deleteLayer",
+      "family": "layer",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play([{_obj: 'delete', _target: ...}], modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.setLayerVisibility",
+      "family": "layer",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play([{_obj: 'hide'|'show', _target: ...}], modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.renameLayer",
+      "family": "layer",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play([{_obj: 'set', to: {name: ...}}], modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.setLayerOpacity",
+      "family": "layer",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play([{_obj: 'set', to: {opacity: ...}}], modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.duplicateLayer",
+      "family": "layer",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play([{_obj: 'duplicate', _target: ...}], modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.setLayerBlendMode",
+      "family": "layer",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play([{_obj: 'set', to: {mode: ...}}], modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.fillLayer",
+      "family": "layer",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play([{_obj: 'fill', ...}], modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.createTextLayer",
+      "family": "text",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play([{_obj: 'make', _target: [{_ref: 'textLayer'}]}], modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.updateTextLayer",
+      "family": "text",
+      "route": "typed_facade",
+      "adobepy": "LayerProxy.textItem.set_contents(...) / set_character_style(...)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.getTextLayerInfo",
+      "family": "text",
+      "route": "typed_facade",
+      "adobepy": "LayerProxy.textItem / Photoshop().activeText",
+      "modalPolicy": "not_required"
+    },
+    {
+      "legacyMethod": "ps.executeScript",
+      "family": "raw",
+      "route": "raw_eval",
+      "adobepy": "Photoshop().eval_js(...) / adobe.raw.RawSession('photoshop').eval_js(...)",
+      "modalPolicy": "caller_option"
+    },
+    {
+      "legacyMethod": "ps.executeAction",
+      "family": "action",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play(action descriptors, modal=True)",
+      "modalPolicy": "modal_required"
+    },
+    {
+      "legacyMethod": "ps.describeApi",
+      "family": "capabilities",
+      "route": "capability_contract",
+      "adobepy": "Photoshop().capabilities() / docs/protocol.md",
+      "modalPolicy": "not_required"
+    },
+    {
+      "legacyMethod": "ps.invoke",
+      "family": "raw",
+      "route": "dom_escape_hatch",
+      "adobepy": "Photoshop().dom.<path>.get() / call(..., modal=True)",
+      "modalPolicy": "caller_option"
+    },
+    {
+      "legacyMethod": "ps.batchPlay",
+      "family": "action",
+      "route": "batch_play",
+      "adobepy": "Photoshop().batch_play(...) / Photoshop().action.batchPlay(...)",
+      "modalPolicy": "caller_option"
+    }
+  ]
+}

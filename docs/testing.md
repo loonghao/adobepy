@@ -83,6 +83,18 @@ Fixture replay gate. It executes small Python facade examples against recorded
 broker responses so user-facing snippets become regression tests.
 
 ```powershell
+npm run smoke:photoshop:live
+```
+
+Optional live Photoshop smoke. It is skipped unless
+`ADOBEPY_LIVE_PHOTOSHOP=1` is set, so normal CI and PR checks do not require a
+desktop Adobe app. On a self-hosted runner with Photoshop, the adobepy broker,
+and the UXP bridge connected, it checks capabilities, `app.version`,
+`active_document`, and `active_layers`. Add `-- --mutate` or set
+`ADOBEPY_LIVE_PHOTOSHOP_MUTATE=1` to run a modal hide/show batchPlay smoke
+against the active layer.
+
+```powershell
 vx just package
 ```
 
@@ -110,6 +122,8 @@ the manifest, creates the archive, and writes the SHA256 file.
   call traces.
 - DCC MCP mock integration tests: prove adapter-style skill functions can call
   adobepy facades and receive DCC MCP result dicts without launching Photoshop.
+- DCC MCP method-map tests: keep legacy `dcc-mcp-photoshop` `ps.*` method
+  families mapped to typed facades or explicit DOM/batchPlay escape hatches.
 - Broker tests: assert auth, capability gating, request id restoration, timeout,
   disconnect cleanup, and HTTP endpoint behavior.
 - Bridge protocol tests: run bundled bridge JavaScript in Node VM contexts with
@@ -126,10 +140,9 @@ the manifest, creates the archive, and writes the SHA256 file.
   Python facade does not expose.
 - Broader fixture replay tests: add traces for save/export, modal operations,
   Premiere project access, and CEP `evalExtendScript` flows.
-- Live-host smoke tests: keep them optional and narrow. A self-hosted runner with
-  Photoshop and UXP Developer Tool can load the plugin, start the broker, execute
-  one read-only script, and export logs. CI should stay green without desktop
-  Adobe apps.
+- Live-host smoke tests: expand `scripts/live_photoshop_smoke.py` with a small
+  fixture document and screenshot/log export once a self-hosted Photoshop runner
+  is available. CI should stay green without desktop Adobe apps.
 - Official API drift checks: periodically crawl or vendor official UXP/DOM type
   metadata from `generators/api_sources/adobe_api_sources.json` and diff
   generated facade names against the current IR. Treat drift as a review signal,
