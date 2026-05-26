@@ -96,11 +96,56 @@ async function main() {
 }
 
 function testExtendScriptDispatchers() {
+  const aeFolder = { id: 3, name: "Plates", typeName: "Folder", numItems: 1, selected: false };
+  const aeComp = {
+    id: 1,
+    name: "Main Comp",
+    typeName: "Composition",
+    width: 1920,
+    height: 1080,
+    duration: 12.5,
+    frameRate: 24,
+    numLayers: 3,
+    workAreaStart: 0,
+    workAreaDuration: 10,
+    selected: true,
+  };
+  const aeFootage = {
+    id: 2,
+    name: "plate.mov",
+    typeName: "Footage",
+    width: 1920,
+    height: 1080,
+    duration: 12.5,
+    frameRate: 24,
+    hasVideo: true,
+    hasAudio: false,
+    parentFolder: aeFolder,
+    mainSource: { file: { fsName: "C:/plates/plate.mov" }, missingFootage: false },
+    selected: false,
+  };
+  const aeItems = [aeComp, aeFootage, aeFolder];
+  const aeProject = {
+    file: { name: "demo.aep", fsName: "C:/demo.aep" },
+    numItems: aeItems.length,
+    activeItem: aeComp,
+    item(index) {
+      return aeItems[index - 1];
+    },
+  };
   const ae = loadDispatcher(afterEffectsDispatcherPath, {
-    app: { version: "24.4.1", project: { file: { name: "demo.aep", fsName: "C:/demo.aep" }, numItems: 3 } },
+    app: { version: "24.4.1", project: aeProject },
   });
   assert.deepStrictEqual(dispatch(ae, "ae_app", "app", "getVersion").result, "24.4.1");
   assert.deepStrictEqual(dispatch(ae, "ae_project", "project", "getActive").result, { name: "demo.aep", path: "C:/demo.aep", itemCount: 3 });
+  assert.strictEqual(dispatch(ae, "ae_items", "project", "getItems").result[0].itemType, "composition");
+  assert.strictEqual(dispatch(ae, "ae_comps", "project", "getCompositions").result[0].numLayers, 3);
+  assert.strictEqual(dispatch(ae, "ae_footage", "project", "getFootageItems").result[0].filePath, "C:/plates/plate.mov");
+  assert.strictEqual(dispatch(ae, "ae_folders", "project", "getFolders").result[0].itemCount, 1);
+  assert.strictEqual(dispatch(ae, "ae_active_item", "project", "getActiveItem").result.isActive, true);
+  assert.strictEqual(dispatch(ae, "ae_selected", "project", "getSelectedItems").result[0].name, "Main Comp");
+  assert.strictEqual(dispatch(ae, "ae_by_id", "item", "getById", [2]).result.name, "plate.mov");
+  assert.strictEqual(dispatch(ae, "ae_by_name", "item", "getByName", ["Main Comp"]).result[0].id, 1);
   assert.strictEqual(dispatch(ae, "ae_raw", "raw", "evalExtendScript", ["app.version"]).result, "24.4.1");
   assert.strictEqual(dispatch(ae, "ae_missing", "layer", "getActive").error.code, -32601);
 

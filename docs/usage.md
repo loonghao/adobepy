@@ -48,6 +48,29 @@ doc.exports.pdf("C:/out/layout.pdf")
 doc.package.for_print("C:/out/package")
 ```
 
+After Effects exposes typed project item metadata for compositions, footage, and
+folders while keeping raw ExtendScript available for host-specific operations
+that are not modeled yet:
+
+```python
+from adobe.after_effects import AfterEffects
+
+app = AfterEffects()
+
+for comp in app.project.compositions:
+    print(comp.name, comp.width, comp.height, comp.duration, comp.frame_rate)
+
+for footage in app.project.footage_items:
+    print(footage.name, footage.file_path, footage.missing_footage)
+
+active = app.active_item
+selected = app.selected_items
+```
+
+Use `adobe.raw.RawSession("after-effects").eval_extendscript(...)` for APIs
+outside the typed composition/project-item facade, such as deep layer/property
+mutation before those namespaces are added.
+
 ## Bridges
 
 ```powershell

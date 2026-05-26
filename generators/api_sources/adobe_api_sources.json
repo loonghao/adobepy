@@ -253,11 +253,31 @@
       "runtimeModule": "extendscript",
       "entryPoint": "app",
       "ir": "generators/ir/after-effects-mvp.json",
-      "trackedBy": [5, 8],
+      "trackedBy": [5, 8, 18],
       "officialDocs": [
         {
           "name": "After Effects scripts",
           "url": "https://helpx.adobe.com/after-effects/using/scripts.html"
+        },
+        {
+          "name": "After Effects Project object",
+          "url": "https://ae-scripting.docsforadobe.dev/general/project/"
+        },
+        {
+          "name": "After Effects Item object",
+          "url": "https://ae-scripting.docsforadobe.dev/item/item/"
+        },
+        {
+          "name": "After Effects AVItem object",
+          "url": "https://ae-scripting.docsforadobe.dev/item/avitem/"
+        },
+        {
+          "name": "After Effects CompItem object",
+          "url": "https://ae-scripting.docsforadobe.dev/item/compitem/"
+        },
+        {
+          "name": "After Effects FolderItem object",
+          "url": "https://ae-scripting.docsforadobe.dev/item/folderitem/"
         }
       ],
       "secondaryRefs": [
@@ -292,11 +312,11 @@
         },
         {
           "name": "Compositions and footage items",
-          "level": "planned",
-          "trackedBy": 8,
-          "docRefs": ["After Effects Scripting Guide mirror"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "level": "mvp",
+          "trackedBy": 18,
+          "docRefs": ["After Effects Project object", "After Effects Item object", "After Effects AVItem object", "After Effects CompItem object", "After Effects FolderItem object"],
+          "irNamespaces": ["project", "item"],
+          "facadeObjects": ["ProjectItemProxy", "CompositionProxy", "FootageItemProxy", "FolderItemProxy"]
         },
         {
           "name": "Layers, masks, effects, and text",

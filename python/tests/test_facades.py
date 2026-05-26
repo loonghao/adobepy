@@ -359,6 +359,70 @@ class CapturingClient:
                 return [marker]
             if method == "create":
                 return {**marker, **args[1], "id": "marker-2"}
+        if host == "after-effects" and namespace == "project":
+            comp = {
+                "id": 1,
+                "index": 1,
+                "name": "Main Comp",
+                "typeName": "Composition",
+                "itemType": "composition",
+                "width": 1920,
+                "height": 1080,
+                "duration": 12.5,
+                "frameRate": 24,
+                "numLayers": 3,
+                "workAreaStart": 0,
+                "workAreaDuration": 10,
+                "selected": True,
+                "isActive": True,
+                "typename": "CompItem",
+            }
+            footage = {
+                "id": 2,
+                "index": 2,
+                "name": "plate.mov",
+                "typeName": "Footage",
+                "itemType": "footage",
+                "width": 1920,
+                "height": 1080,
+                "duration": 12.5,
+                "frameRate": 24,
+                "hasVideo": True,
+                "hasAudio": False,
+                "filePath": "C:/plates/plate.mov",
+                "missingFootage": False,
+                "parentFolderId": 3,
+                "parentFolderName": "Plates",
+                "typename": "FootageItem",
+            }
+            folder = {
+                "id": 3,
+                "index": 3,
+                "name": "Plates",
+                "typeName": "Folder",
+                "itemType": "folder",
+                "itemCount": 1,
+                "typename": "FolderItem",
+            }
+            if method == "getActive":
+                return {"name": "cut", "path": "C:/cut", "itemCount": 3}
+            if method == "getItems":
+                return [comp, footage, folder]
+            if method == "getCompositions":
+                return [comp]
+            if method == "getFootageItems":
+                return [footage]
+            if method == "getFolders":
+                return [folder]
+            if method == "getActiveItem":
+                return comp
+            if method == "getSelectedItems":
+                return [comp]
+        if host == "after-effects" and namespace == "item":
+            if method == "getById":
+                return {"id": args[0], "index": 1, "name": "Main Comp", "typeName": "Composition", "itemType": "composition", "typename": "CompItem"}
+            if method == "getByName":
+                return [{"id": 1, "index": 1, "name": args[0], "typeName": "Composition", "itemType": "composition", "typename": "CompItem"}]
         if host == "premiere" and namespace == "encoder":
             if method == "getManager":
                 return {"isAMEInstalled": True, "typename": "EncoderManager"}
@@ -695,6 +759,124 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(ae.version, "24.4")
         self.assertEqual(ae.activeProject.itemCount, 3)
         self.assertEqual(ae.project.path, "C:/cut")
+        self.assertEqual(ae.active_project.name, "cut")
+        self.assertEqual(ae.project.name, "cut")
+        self.assertEqual(ae.app.activeProject.item_count, 3)
+        self.assertEqual(ae.app.activeItem.name, "Main Comp")
+        self.assertEqual(ae.app.selectedItems[0].name, "Main Comp")
+        self.assertEqual(ae.active_item.name, "Main Comp")
+        self.assertEqual(ae.activeItem.typeName, "Composition")
+        self.assertEqual(ae.selected_items[0].id, 1)
+        self.assertEqual(ae.selectedItems[0].name, "Main Comp")
+        self.assertEqual(ae.project.activeItem.name, "Main Comp")
+        self.assertEqual(ae.project.selectedItems[0].name, "Main Comp")
+        self.assertEqual(ae.project.items[1].parentFolderName, "Plates")
+        item = ae.project.items[1]
+        self.assertEqual(item.id, 2)
+        self.assertEqual(item.index, 2)
+        self.assertEqual(item.name, "plate.mov")
+        self.assertEqual(item.type_name, "Footage")
+        self.assertEqual(item.typeName, "Footage")
+        self.assertEqual(item.item_type, "footage")
+        self.assertEqual(item.itemType, "footage")
+        self.assertEqual(item.parent_folder_id, 3)
+        self.assertEqual(item.parentFolderId, 3)
+        self.assertEqual(item.parent_folder_name, "Plates")
+        self.assertFalse(item.selected)
+        self.assertIsNone(item.is_active)
+        self.assertIsNone(item.isActive)
+        self.assertEqual(item.width, 1920)
+        self.assertEqual(item.height, 1080)
+        self.assertEqual(item.duration, 12.5)
+        self.assertEqual(item.frame_rate, 24)
+        self.assertEqual(item.frameRate, 24)
+        self.assertTrue(item.has_video)
+        self.assertTrue(item.hasVideo)
+        self.assertFalse(item.has_audio)
+        self.assertFalse(item.hasAudio)
+        self.assertEqual(item.file_path, "C:/plates/plate.mov")
+        self.assertEqual(item.filePath, "C:/plates/plate.mov")
+        self.assertFalse(item.missing_footage)
+        self.assertFalse(item.missingFootage)
+        self.assertEqual(item.typename, "FootageItem")
+        comp = ae.project.compositions[0]
+        self.assertEqual(ae.project.compositions[0].width, 1920)
+        self.assertEqual(ae.project.compositions[0].numLayers, 3)
+        self.assertEqual(comp.id, 1)
+        self.assertEqual(comp.index, 1)
+        self.assertEqual(comp.name, "Main Comp")
+        self.assertEqual(comp.type_name, "Composition")
+        self.assertEqual(comp.typeName, "Composition")
+        self.assertEqual(comp.item_type, "composition")
+        self.assertEqual(comp.itemType, "composition")
+        self.assertIsNone(comp.parent_folder_id)
+        self.assertIsNone(comp.parentFolderId)
+        self.assertIsNone(comp.parent_folder_name)
+        self.assertIsNone(comp.parentFolderName)
+        self.assertTrue(comp.selected)
+        self.assertTrue(comp.is_active)
+        self.assertTrue(comp.isActive)
+        self.assertEqual(comp.height, 1080)
+        self.assertEqual(comp.duration, 12.5)
+        self.assertEqual(comp.frame_rate, 24)
+        self.assertEqual(comp.frameRate, 24)
+        self.assertEqual(comp.num_layers, 3)
+        self.assertEqual(comp.numLayers, 3)
+        self.assertEqual(comp.work_area_start, 0)
+        self.assertEqual(comp.workAreaStart, 0)
+        self.assertEqual(comp.work_area_duration, 10)
+        self.assertEqual(comp.workAreaDuration, 10)
+        self.assertEqual(comp.typename, "CompItem")
+        footage = ae.project.footage_items[0]
+        self.assertEqual(footage.filePath, "C:/plates/plate.mov")
+        self.assertEqual(ae.project.footageItems[0].filePath, "C:/plates/plate.mov")
+        self.assertFalse(ae.project.footageItems[0].hasAudio)
+        self.assertEqual(footage.id, 2)
+        self.assertEqual(footage.index, 2)
+        self.assertEqual(footage.name, "plate.mov")
+        self.assertEqual(footage.type_name, "Footage")
+        self.assertEqual(footage.typeName, "Footage")
+        self.assertEqual(footage.item_type, "footage")
+        self.assertEqual(footage.itemType, "footage")
+        self.assertEqual(footage.parent_folder_id, 3)
+        self.assertEqual(footage.parentFolderId, 3)
+        self.assertEqual(footage.parent_folder_name, "Plates")
+        self.assertEqual(footage.parentFolderName, "Plates")
+        self.assertIsNone(footage.isActive)
+        self.assertEqual(footage.width, 1920)
+        self.assertEqual(footage.height, 1080)
+        self.assertEqual(footage.duration, 12.5)
+        self.assertEqual(footage.frame_rate, 24)
+        self.assertEqual(footage.frameRate, 24)
+        self.assertTrue(footage.has_video)
+        self.assertTrue(footage.hasVideo)
+        self.assertFalse(footage.has_audio)
+        self.assertEqual(footage.file_path, "C:/plates/plate.mov")
+        self.assertFalse(footage.missing_footage)
+        self.assertFalse(footage.missingFootage)
+        self.assertEqual(footage.typename, "FootageItem")
+        folder = ae.project.folders[0]
+        self.assertEqual(folder.itemCount, 1)
+        self.assertEqual(folder.id, 3)
+        self.assertEqual(folder.index, 3)
+        self.assertEqual(folder.name, "Plates")
+        self.assertEqual(folder.type_name, "Folder")
+        self.assertEqual(folder.typeName, "Folder")
+        self.assertEqual(folder.item_type, "folder")
+        self.assertEqual(folder.itemType, "folder")
+        self.assertIsNone(folder.parent_folder_id)
+        self.assertIsNone(folder.parentFolderId)
+        self.assertIsNone(folder.parent_folder_name)
+        self.assertIsNone(folder.parentFolderName)
+        self.assertIsNone(folder.selected)
+        self.assertIsNone(folder.is_active)
+        self.assertIsNone(folder.isActive)
+        self.assertEqual(folder.item_count, 1)
+        self.assertEqual(folder.typename, "FolderItem")
+        self.assertEqual(ae.project.get_item_by_id(1).typename, "CompItem")
+        self.assertEqual(ae.project.getItemById(1).name, "Main Comp")
+        self.assertEqual(ae.project.get_items_by_name("Main Comp")[0].id, 1)
+        self.assertEqual(ae.project.getItemsByName("Main Comp")[0].typeName, "Composition")
 
         illustrator = Illustrator(client=CapturingClient())
         self.assertEqual(illustrator.version, "28.2")

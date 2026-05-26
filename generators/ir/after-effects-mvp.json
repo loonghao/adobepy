@@ -5,9 +5,31 @@
     {
       "name": "app",
       "methods": [{"name": "getVersion", "returns": "str"}],
-      "properties": [{"name": "active_project", "type": "Project | None", "source": "project.getActive"}]
+      "properties": [
+        {"name": "active_project", "type": "Project | None", "source": "project.getActive"},
+        {"name": "active_item", "type": "ProjectItem | None", "source": "project.getActiveItem"},
+        {"name": "selected_items", "type": "list[ProjectItem]", "source": "project.getSelectedItems"}
+      ]
     },
-    {"name": "project", "methods": [{"name": "getActive", "returns": "Project | None"}]},
+    {
+      "name": "project",
+      "methods": [
+        {"name": "getActive", "returns": "Project | None"},
+        {"name": "getItems", "returns": "list[ProjectItem]"},
+        {"name": "getCompositions", "returns": "list[Composition]"},
+        {"name": "getFootageItems", "returns": "list[FootageItem]"},
+        {"name": "getFolders", "returns": "list[FolderItem]"},
+        {"name": "getActiveItem", "returns": "ProjectItem | None"},
+        {"name": "getSelectedItems", "returns": "list[ProjectItem]"}
+      ]
+    },
+    {
+      "name": "item",
+      "methods": [
+        {"name": "getById", "returns": "ProjectItem | None"},
+        {"name": "getByName", "returns": "list[ProjectItem]"}
+      ]
+    },
     {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any", "raw": true}]}
   ],
   "proxies": [
@@ -16,7 +38,101 @@
       "properties": [
         {"name": "name", "type": "str | None"},
         {"name": "path", "type": "str | None"},
-        {"name": "item_count", "type": "int | None"}
+        {"name": "item_count", "type": "int | None"},
+        {"name": "items", "type": "list[ProjectItem]", "source": "project.getItems"},
+        {"name": "compositions", "type": "list[Composition]", "source": "project.getCompositions"},
+        {"name": "footage_items", "type": "list[FootageItem]", "source": "project.getFootageItems"},
+        {"name": "folders", "type": "list[FolderItem]", "source": "project.getFolders"},
+        {"name": "active_item", "type": "ProjectItem | None", "source": "project.getActiveItem"},
+        {"name": "selected_items", "type": "list[ProjectItem]", "source": "project.getSelectedItems"}
+      ],
+      "methods": [
+        {"name": "getItemById", "returns": "ProjectItem | None"},
+        {"name": "getItemsByName", "returns": "list[ProjectItem]"}
+      ]
+    },
+    {
+      "name": "ProjectItemProxy",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "type_name", "type": "str | None"},
+        {"name": "item_type", "type": "str | None"},
+        {"name": "parent_folder_id", "type": "Any"},
+        {"name": "parent_folder_name", "type": "str | None"},
+        {"name": "selected", "type": "bool | None"},
+        {"name": "is_active", "type": "bool | None"},
+        {"name": "width", "type": "int | None"},
+        {"name": "height", "type": "int | None"},
+        {"name": "duration", "type": "float | None"},
+        {"name": "frame_rate", "type": "float | None"},
+        {"name": "has_video", "type": "bool | None"},
+        {"name": "has_audio", "type": "bool | None"},
+        {"name": "file_path", "type": "str | None"},
+        {"name": "missing_footage", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "CompositionProxy",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "type_name", "type": "str | None"},
+        {"name": "item_type", "type": "str | None"},
+        {"name": "parent_folder_id", "type": "Any"},
+        {"name": "parent_folder_name", "type": "str | None"},
+        {"name": "selected", "type": "bool | None"},
+        {"name": "is_active", "type": "bool | None"},
+        {"name": "width", "type": "int | None"},
+        {"name": "height", "type": "int | None"},
+        {"name": "duration", "type": "float | None"},
+        {"name": "frame_rate", "type": "float | None"},
+        {"name": "num_layers", "type": "int | None"},
+        {"name": "work_area_start", "type": "float | None"},
+        {"name": "work_area_duration", "type": "float | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "FootageItemProxy",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "type_name", "type": "str | None"},
+        {"name": "item_type", "type": "str | None"},
+        {"name": "parent_folder_id", "type": "Any"},
+        {"name": "parent_folder_name", "type": "str | None"},
+        {"name": "selected", "type": "bool | None"},
+        {"name": "is_active", "type": "bool | None"},
+        {"name": "width", "type": "int | None"},
+        {"name": "height", "type": "int | None"},
+        {"name": "duration", "type": "float | None"},
+        {"name": "frame_rate", "type": "float | None"},
+        {"name": "has_video", "type": "bool | None"},
+        {"name": "has_audio", "type": "bool | None"},
+        {"name": "file_path", "type": "str | None"},
+        {"name": "missing_footage", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "FolderItemProxy",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "type_name", "type": "str | None"},
+        {"name": "item_type", "type": "str | None"},
+        {"name": "parent_folder_id", "type": "Any"},
+        {"name": "parent_folder_name", "type": "str | None"},
+        {"name": "selected", "type": "bool | None"},
+        {"name": "is_active", "type": "bool | None"},
+        {"name": "item_count", "type": "int | None"},
+        {"name": "typename", "type": "str | None"}
       ]
     }
   ]

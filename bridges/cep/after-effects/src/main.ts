@@ -9,8 +9,13 @@ startCepBridge({
     host: "after-effects",
     bridgeKind: "cep",
     bridgeVersion: "0.1.0",
-    namespaces: ["app", "project", "raw"],
-    features: ["extendscript", "projectInfo"],
-    methods: { app: ["getVersion"], project: ["getActive"], raw: ["evalExtendScript"] }
+    namespaces: ["app", "project", "item", "raw"],
+    features: ["extendscript", "projectInfo", "projectItems", "compositions", "footageItems"],
+    methods: {
+      app: ["getVersion"],
+      project: ["getActive", "getItems", "getCompositions", "getFootageItems", "getFolders", "getActiveItem", "getSelectedItems"],
+      item: ["getById", "getByName"],
+      raw: ["evalExtendScript"]
+    }
   }
 });
