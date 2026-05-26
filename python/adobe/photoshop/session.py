@@ -94,6 +94,14 @@ class Photoshop(PhotoshopSession):
     def channels(self) -> list["ChannelProxy"]:
         return self.app.channels
 
+    @property
+    def active_text(self) -> "TextItemProxy | None":
+        return self.app.active_text
+
+    @property
+    def activeText(self) -> "TextItemProxy | None":
+        return self.active_text
+
     def eval_js(self, source: str, *args: Any, timeout_ms: int | None = None) -> Any:
         return self.invoke("raw", "evalJs", source, *args, options=_timeout_options(timeout_ms))
 
@@ -210,6 +218,15 @@ class PhotoshopApp:
     def channels(self) -> list["ChannelProxy"]:
         document = self.active_document
         return document.channels if document else []
+
+    @property
+    def active_text(self) -> "TextItemProxy | None":
+        payload = self._session.invoke("text", "getActive")
+        return TextItemProxy(self._session, payload.get("layerId"), payload) if payload else None
+
+    @property
+    def activeText(self) -> "TextItemProxy | None":
+        return self.active_text
 
 
 class PhotoshopAction:
@@ -690,6 +707,196 @@ class ChannelProxy:
 
 
 @dataclass
+class TextItemProxy:
+    _session: PhotoshopSession
+    _layer_id: int | str | None
+    _payload: dict[str, Any]
+
+    @property
+    def layer_id(self) -> int | str | None:
+        return self._payload.get("layerId", self._layer_id)
+
+    @property
+    def layerId(self) -> int | str | None:
+        return self.layer_id
+
+    @property
+    def contents(self) -> str | None:
+        return self._payload.get("contents")
+
+    @property
+    def is_paragraph_text(self) -> bool | None:
+        value = self._payload.get("isParagraphText")
+        return bool(value) if value is not None else None
+
+    @property
+    def isParagraphText(self) -> bool | None:
+        return self.is_paragraph_text
+
+    @property
+    def is_point_text(self) -> bool | None:
+        value = self._payload.get("isPointText")
+        return bool(value) if value is not None else None
+
+    @property
+    def isPointText(self) -> bool | None:
+        return self.is_point_text
+
+    @property
+    def orientation(self) -> str | None:
+        value = self._payload.get("orientation")
+        return str(value) if value is not None else None
+
+    @property
+    def text_click_point(self) -> dict[str, Any] | None:
+        value = self._payload.get("textClickPoint")
+        return value if isinstance(value, dict) else None
+
+    @property
+    def textClickPoint(self) -> dict[str, Any] | None:
+        return self.text_click_point
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+    @property
+    def character_style(self) -> "CharacterStyleProxy":
+        return CharacterStyleProxy(self)
+
+    @property
+    def characterStyle(self) -> "CharacterStyleProxy":
+        return self.character_style
+
+    @property
+    def paragraph_style(self) -> "ParagraphStyleProxy":
+        return ParagraphStyleProxy(self)
+
+    @property
+    def paragraphStyle(self) -> "ParagraphStyleProxy":
+        return self.paragraph_style
+
+    def refresh(self) -> "TextItemProxy":
+        payload = self._session.invoke("text", "getByLayerId", self.layer_id)
+        self._payload = payload or {}
+        self._layer_id = self.layer_id
+        return self
+
+    def set_contents(self, contents: str, *, command_name: str | None = None) -> "TextItemProxy":
+        return self._invoke("setContents", contents, command_name=command_name, default_command_name="Set text contents")
+
+    def setContents(self, contents: str, *, commandName: str | None = None) -> "TextItemProxy":
+        return self.set_contents(contents, command_name=commandName)
+
+    def set_character_style(self, properties: dict[str, Any], *, command_name: str | None = None) -> "TextItemProxy":
+        return self._invoke("setCharacterStyle", properties, command_name=command_name, default_command_name="Set character style")
+
+    def setCharacterStyle(self, properties: dict[str, Any], *, commandName: str | None = None) -> "TextItemProxy":
+        return self.set_character_style(properties, command_name=commandName)
+
+    def set_paragraph_style(self, properties: dict[str, Any], *, command_name: str | None = None) -> "TextItemProxy":
+        return self._invoke("setParagraphStyle", properties, command_name=command_name, default_command_name="Set paragraph style")
+
+    def setParagraphStyle(self, properties: dict[str, Any], *, commandName: str | None = None) -> "TextItemProxy":
+        return self.set_paragraph_style(properties, command_name=commandName)
+
+    def set_text_click_point(self, point: dict[str, Any], *, command_name: str | None = None) -> "TextItemProxy":
+        return self._invoke("setTextClickPoint", point, command_name=command_name, default_command_name="Set text click point")
+
+    def setTextClickPoint(self, point: dict[str, Any], *, commandName: str | None = None) -> "TextItemProxy":
+        return self.set_text_click_point(point, command_name=commandName)
+
+    def set_orientation(self, orientation: str, *, command_name: str | None = None) -> "TextItemProxy":
+        return self._invoke("setOrientation", orientation, command_name=command_name, default_command_name="Set text orientation")
+
+    def setOrientation(self, orientation: str, *, commandName: str | None = None) -> "TextItemProxy":
+        return self.set_orientation(orientation, command_name=commandName)
+
+    def convert_to_paragraph_text(self, *, command_name: str | None = None) -> "TextItemProxy":
+        return self._invoke("convertToParagraphText", command_name=command_name, default_command_name="Convert to paragraph text")
+
+    def convertToParagraphText(self, *, commandName: str | None = None) -> "TextItemProxy":
+        return self.convert_to_paragraph_text(command_name=commandName)
+
+    def convert_to_point_text(self, *, command_name: str | None = None) -> "TextItemProxy":
+        return self._invoke("convertToPointText", command_name=command_name, default_command_name="Convert to point text")
+
+    def convertToPointText(self, *, commandName: str | None = None) -> "TextItemProxy":
+        return self.convert_to_point_text(command_name=commandName)
+
+    def convert_to_shape(self, *, command_name: str | None = None) -> "TextItemProxy":
+        return self._invoke("convertToShape", command_name=command_name, default_command_name="Convert text to shape")
+
+    def convertToShape(self, *, commandName: str | None = None) -> "TextItemProxy":
+        return self.convert_to_shape(command_name=commandName)
+
+    def create_work_path(self, *, command_name: str | None = None) -> "TextItemProxy":
+        return self._invoke("createWorkPath", command_name=command_name, default_command_name="Create text work path")
+
+    def createWorkPath(self, *, commandName: str | None = None) -> "TextItemProxy":
+        return self.create_work_path(command_name=commandName)
+
+    def _invoke(
+        self,
+        method: str,
+        *args: Any,
+        command_name: str | None = None,
+        default_command_name: str,
+    ) -> "TextItemProxy":
+        payload = self._session.invoke(
+            "text",
+            method,
+            self.layer_id,
+            *args,
+            options=self._session.modal_options(command_name=command_name, default_command_name=default_command_name),
+        )
+        self._payload = payload or {}
+        self._layer_id = self.layer_id
+        return self
+
+
+class _TextStyleProxy:
+    def __init__(self, text_item: TextItemProxy, payload_key: str) -> None:
+        self._text_item = text_item
+        self._payload_key = payload_key
+
+    @property
+    def _payload(self) -> dict[str, Any]:
+        value = self._text_item._payload.get(self._payload_key)
+        return value if isinstance(value, dict) else {}
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        if name in self._payload:
+            return self._payload[name]
+        raise AttributeError(name)
+
+
+class CharacterStyleProxy(_TextStyleProxy):
+    def __init__(self, text_item: TextItemProxy) -> None:
+        super().__init__(text_item, "characterStyle")
+
+    def update(self, properties: dict[str, Any] | None = None, *, command_name: str | None = None, **kwargs: Any) -> TextItemProxy:
+        merged = dict(properties or {})
+        merged.update(kwargs)
+        return self._text_item.set_character_style(merged, command_name=command_name)
+
+    def reset(self, *, command_name: str | None = None) -> TextItemProxy:
+        return self._text_item._invoke("resetCharacterStyle", command_name=command_name, default_command_name="Reset character style")
+
+
+class ParagraphStyleProxy(_TextStyleProxy):
+    def __init__(self, text_item: TextItemProxy) -> None:
+        super().__init__(text_item, "paragraphStyle")
+
+    def update(self, properties: dict[str, Any] | None = None, *, command_name: str | None = None, **kwargs: Any) -> TextItemProxy:
+        merged = dict(properties or {})
+        merged.update(kwargs)
+        return self._text_item.set_paragraph_style(merged, command_name=command_name)
+
+
+@dataclass
 class LayerProxy:
     _session: PhotoshopSession
     _payload: dict[str, Any]
@@ -730,6 +937,15 @@ class LayerProxy:
     def layers(self) -> list["LayerProxy"]:
         payload = self._session.invoke("layer", "getChildren", self.id)
         return [LayerProxy(self._session, layer) for layer in payload or []]
+
+    @property
+    def text_item(self) -> "TextItemProxy | None":
+        payload = self._session.invoke("text", "getByLayerId", self.id)
+        return TextItemProxy(self._session, payload.get("layerId"), payload) if payload else None
+
+    @property
+    def textItem(self) -> "TextItemProxy | None":
+        return self.text_item
 
     def hide(self, *, command_name: str | None = None) -> Any:
         return self._session.action.batch_play(

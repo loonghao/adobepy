@@ -116,6 +116,38 @@ async function testPhotoshopBridge() {
     },
     inverse: async () => events.push({ kind: "selection.inverse" })
   };
+  const textItem = {
+    contents: "Hello",
+    isParagraphText: false,
+    isPointText: true,
+    orientation: "horizontal",
+    textClickPoint: { x: 11, y: 22 },
+    typename: "TextItem",
+    characterStyle: {
+      font: "ArialMT",
+      size: 24,
+      tracking: 10,
+      reset: async () => events.push({ kind: "text.characterStyle.reset" })
+    },
+    paragraphStyle: {
+      justification: "left",
+      hyphenation: false
+    },
+    convertToParagraphText: async () => {
+      events.push({ kind: "text.convertToParagraphText" });
+      textItem.isParagraphText = true;
+      textItem.isPointText = false;
+    },
+    convertToPointText: async () => {
+      events.push({ kind: "text.convertToPointText" });
+      textItem.isParagraphText = false;
+      textItem.isPointText = true;
+    },
+    convertToShape: async () => events.push({ kind: "text.convertToShape" }),
+    createWorkPath: async () => events.push({ kind: "text.createWorkPath" })
+  };
+  const textLayer = { id: 7, name: "Layer 1", kind: "text", opacity: 80, visible: true, textItem };
+  textItem.parent = textLayer;
   const document = {
     id: 9,
     title: "demo.psd",
@@ -123,9 +155,9 @@ async function testPhotoshopBridge() {
     height: { valueOf: () => 1080 },
     resolution: 72,
     saved: true,
-    activeLayers: [{ id: 7, name: "Layer 1", kind: "pixel", opacity: 80, visible: true }],
+    activeLayers: [textLayer],
     layers: [
-      { id: 7, name: "Layer 1", kind: "pixel", opacity: 80, visible: true },
+      textLayer,
       { id: 8, name: "Group", kind: "group", layers: [{ id: 10, name: "Child" }] }
     ],
     selection,
@@ -167,6 +199,7 @@ async function testPhotoshopBridge() {
   assert.ok(env.sent[0].capabilities.methods.document.includes("getLayers"));
   assert.ok(env.sent[0].capabilities.methods.selection.includes("selectRectangle"));
   assert.ok(env.sent[0].capabilities.methods.channel.includes("getChannels"));
+  assert.ok(env.sent[0].capabilities.methods.text.includes("setContents"));
   assert.ok(env.sent[0].capabilities.methods.raw.includes("getPath"));
   assert.strictEqual(result(await rpc(env, "photoshop", "app", "getVersion")), "26.5.1");
   assert.strictEqual(result(await rpc(env, "photoshop", "app", "getDocuments"))[0].resolution, 72);
@@ -187,6 +220,18 @@ async function testPhotoshopBridge() {
   assert.strictEqual(result(await rpc(env, "photoshop", "channel", "getByName", [9, "Alpha 1"])).id, 21);
   assert.strictEqual(result(await rpc(env, "photoshop", "channel", "add", [9, "Mask"], { modal: true })).name, "Mask");
   assert.strictEqual(result(await rpc(env, "photoshop", "channel", "remove", [9, 21], { modal: true })).id, 21);
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "getActive")).contents, "Hello");
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "getByLayerId", [7])).characterStyle.size, 24);
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "setContents", [7, "World"], { modal: true })).contents, "World");
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "setCharacterStyle", [7, { size: 36, tracking: 20 }], { modal: true })).characterStyle.size, 36);
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "setParagraphStyle", [7, { justification: "center" }], { modal: true })).paragraphStyle.justification, "center");
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "setTextClickPoint", [7, { x: 4, y: 5 }], { modal: true })).textClickPoint.x, 4);
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "setOrientation", [7, "vertical"], { modal: true })).orientation, "vertical");
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "resetCharacterStyle", [7], { modal: true })).typename, "TextItem");
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "convertToParagraphText", [7], { modal: true })).isParagraphText, true);
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "convertToPointText", [7], { modal: true })).isPointText, true);
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "convertToShape", [7], { modal: true })).typename, "TextItem");
+  assert.strictEqual(result(await rpc(env, "photoshop", "text", "createWorkPath", [7], { modal: true })).typename, "TextItem");
   assert.strictEqual(result(await rpc(env, "photoshop", "raw", "getPath", [["app", "activeDocument", "layers", 0, "name"]], {})), "Layer 1");
   assert.deepStrictEqual(result(await rpc(env, "photoshop", "action", "batchPlay", [[{ _obj: "hide" }], { synchronousExecution: true }], { modal: true, commandName: "Hide" })), [{ _obj: "hide" }]);
   assert.deepStrictEqual(result(await rpc(env, "photoshop", "document", "saveAs", [{ id: 9, path: "C:/out.psd", format: "psd" }], { modal: true, commandName: "Save" })).id, 9);
@@ -196,6 +241,7 @@ async function testPhotoshopBridge() {
   assert.ok(events.some((event) => event.kind === "saveAs" && event.url === "file:///C:/out.psd"));
   assert.ok(events.some((event) => event.kind === "selection.selectRectangle"));
   assert.ok(events.some((event) => event.kind === "channel.remove"));
+  assert.ok(events.some((event) => event.kind === "text.convertToShape"));
 }
 
 async function testInDesignBridge() {

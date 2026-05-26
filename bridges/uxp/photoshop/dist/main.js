@@ -126,7 +126,7 @@
         bridgeKind: "uxp",
         bridgeVersion: "0.1.0",
         hostVersion: photoshopVersion(),
-        namespaces: ["app", "document", "layer", "selection", "channel", "action", "raw"],
+        namespaces: ["app", "document", "layer", "selection", "channel", "text", "action", "raw"],
         features: ["batchPlay", "executeAsModal"],
         methods: {
           app: ["getVersion", "getDocuments"],
@@ -151,6 +151,20 @@
             "save"
           ],
           channel: ["getChannels", "getActiveChannels", "getComponentChannels", "getByName", "add", "remove"],
+          text: [
+            "getActive",
+            "getByLayerId",
+            "setContents",
+            "setCharacterStyle",
+            "setParagraphStyle",
+            "setTextClickPoint",
+            "setOrientation",
+            "resetCharacterStyle",
+            "convertToParagraphText",
+            "convertToPointText",
+            "convertToShape",
+            "createWorkPath"
+          ],
           action: ["batchPlay"],
           raw: ["evalJs", "getPath", "callPath"]
         }
@@ -197,6 +211,20 @@
       if (request.namespace === "channel" && request.method === "getByName") return channelByName(request);
       if (request.namespace === "channel" && request.method === "add") return channelAdd(request);
       if (request.namespace === "channel" && request.method === "remove") return channelRemove(request);
+      if (request.namespace === "text" && request.method === "getActive") return serializeTextItem(textItemForLayer(void 0));
+      if (request.namespace === "text" && request.method === "getByLayerId") return serializeTextItem(textItemForLayer(request.args?.[0]));
+      if (request.namespace === "text" && request.method === "setContents") return textSetProperty(request, "contents", request.args?.[1], "Set text contents");
+      if (request.namespace === "text" && request.method === "setTextClickPoint") {
+        return textSetProperty(request, "textClickPoint", request.args?.[1], "Set text click point");
+      }
+      if (request.namespace === "text" && request.method === "setOrientation") return textSetProperty(request, "orientation", request.args?.[1], "Set text orientation");
+      if (request.namespace === "text" && request.method === "setCharacterStyle") return textSetNestedProperties(request, "characterStyle", request.args?.[1], "Set character style");
+      if (request.namespace === "text" && request.method === "setParagraphStyle") return textSetNestedProperties(request, "paragraphStyle", request.args?.[1], "Set paragraph style");
+      if (request.namespace === "text" && request.method === "resetCharacterStyle") return textCallNested(request, "characterStyle", "reset", "Reset character style");
+      if (request.namespace === "text" && request.method === "convertToParagraphText") return textCall(request, "convertToParagraphText", "Convert to paragraph text");
+      if (request.namespace === "text" && request.method === "convertToPointText") return textCall(request, "convertToPointText", "Convert to point text");
+      if (request.namespace === "text" && request.method === "convertToShape") return textCall(request, "convertToShape", "Convert text to shape");
+      if (request.namespace === "text" && request.method === "createWorkPath") return textCall(request, "createWorkPath", "Create text work path");
       if (request.namespace === "action" && request.method === "batchPlay") return batchPlay(request);
       if (request.namespace === "raw" && request.method === "evalJs") return evalJavaScript(asString(request.args?.[0]) ?? "", request.args?.slice(1) ?? []);
       if (request.namespace === "raw" && request.method === "getPath") return getPath(request);
@@ -289,6 +317,71 @@
       typename: asString(property(channel, "typename"))
     };
   }
+  function serializeTextItem(textItem, layer) {
+    if (!isObject(textItem)) return null;
+    return {
+      layerId: property(layer, "id") ?? property(property(textItem, "parent"), "id"),
+      contents: asString(property(textItem, "contents")),
+      isParagraphText: property(textItem, "isParagraphText"),
+      isPointText: property(textItem, "isPointText"),
+      orientation: asString(property(textItem, "orientation")) ?? property(textItem, "orientation"),
+      textClickPoint: serializePoint(property(textItem, "textClickPoint")),
+      typename: asString(property(textItem, "typename")),
+      characterStyle: serializeStyle(property(textItem, "characterStyle"), CHARACTER_STYLE_KEYS),
+      paragraphStyle: serializeStyle(property(textItem, "paragraphStyle"), PARAGRAPH_STYLE_KEYS)
+    };
+  }
+  function serializePoint(point) {
+    if (!isObject(point)) return null;
+    return {
+      x: scalarValue(property(point, "x")),
+      y: scalarValue(property(point, "y"))
+    };
+  }
+  var CHARACTER_STYLE_KEYS = [
+    "font",
+    "size",
+    "leading",
+    "tracking",
+    "baselineShift",
+    "horizontalScale",
+    "verticalScale",
+    "autoKerning",
+    "antiAliasMethod",
+    "capitalization",
+    "underline",
+    "strikeThrough",
+    "fauxBold",
+    "fauxItalic",
+    "allCaps",
+    "smallCaps",
+    "noBreak",
+    "color"
+  ];
+  var PARAGRAPH_STYLE_KEYS = [
+    "justification",
+    "firstLineIndent",
+    "startIndent",
+    "endIndent",
+    "spaceBefore",
+    "spaceAfter",
+    "hyphenation",
+    "kashidaWidth",
+    "kinsoku",
+    "mojikumi"
+  ];
+  function serializeStyle(style, keys) {
+    if (!isObject(style)) return null;
+    const output = {};
+    for (const key of keys) {
+      try {
+        const value = property(style, key);
+        if (value !== void 0 && typeof value !== "function") output[key] = serializeDomValue(value, 1);
+      } catch {
+      }
+    }
+    return output;
+  }
   function serializeDocuments(documents) {
     return documents.map(serializeDocument).filter((document) => document !== null);
   }
@@ -368,6 +461,43 @@
       return serializeChannel(channel);
     });
   }
+  async function textSetProperty(request, key, value, defaultCommandName) {
+    const textItem = requiredTextItem(request.args?.[0]);
+    return withModal(request, defaultCommandName, async () => {
+      textItem[key] = value;
+      return serializeTextItem(textItem, findLayer(request.args?.[0]));
+    });
+  }
+  async function textSetNestedProperties(request, styleName, properties, defaultCommandName) {
+    const textItem = requiredTextItem(request.args?.[0]);
+    const style = property(textItem, styleName);
+    if (!isObject(style)) unavailable(`Photoshop textItem.${styleName}`);
+    return withModal(request, defaultCommandName, async () => {
+      for (const [key, value] of Object.entries(isObject(properties) ? properties : {})) {
+        style[key] = value;
+      }
+      return serializeTextItem(textItem, findLayer(request.args?.[0]));
+    });
+  }
+  async function textCall(request, method, defaultCommandName) {
+    const textItem = requiredTextItem(request.args?.[0]);
+    const fn = property(textItem, method);
+    if (!fn) unavailable(`Photoshop textItem.${method}`);
+    return withModal(request, defaultCommandName, async () => {
+      const result = await maybePromise(fn.call(textItem));
+      return serializeTextItem(isObject(result) ? result : textItem, findLayer(request.args?.[0]));
+    });
+  }
+  async function textCallNested(request, styleName, method, defaultCommandName) {
+    const textItem = requiredTextItem(request.args?.[0]);
+    const style = property(textItem, styleName);
+    const fn = property(style, method);
+    if (!fn) unavailable(`Photoshop textItem.${styleName}.${method}`);
+    return withModal(request, defaultCommandName, async () => {
+      const result = await maybePromise(fn.call(style));
+      return serializeTextItem(isObject(result) ? result : textItem, findLayer(request.args?.[0]));
+    });
+  }
   function findLayer(id) {
     if (id === void 0 || id === null) return activeLayer();
     for (const document of openDocuments()) {
@@ -375,6 +505,20 @@
       if (match) return match;
     }
     return void 0;
+  }
+  function textItemForLayer(layerId) {
+    const layer = findLayer(layerId);
+    if (!layer) return void 0;
+    try {
+      return property(layer, "textItem");
+    } catch {
+      return void 0;
+    }
+  }
+  function requiredTextItem(layerId) {
+    const textItem = textItemForLayer(layerId);
+    if (!textItem) unavailable("Photoshop layer.textItem");
+    return textItem;
   }
   function findChannel(document, idOrName) {
     if (idOrName === void 0 || idOrName === null) return void 0;

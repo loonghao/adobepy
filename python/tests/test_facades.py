@@ -30,7 +30,7 @@ class CapturingClient:
         if namespace == "layer":
             if method == "getChildren":
                 return [{"id": 12, "name": "Child", "kind": "pixel"}]
-            return {"id": 11, "name": "Layer 1"}
+            return {"id": 11, "name": "Layer 1", "kind": "text"}
         if namespace == "selection":
             if method == "get":
                 return {"bounds": {"top": 1, "left": 2, "bottom": 40, "right": 50}, "docId": args[0], "solid": True, "typename": "Selection"}
@@ -46,6 +46,34 @@ class CapturingClient:
                 return {**channel, "name": args[1] or "Alpha 2"}
             if method == "remove":
                 return channel
+        if namespace == "text":
+            payload = {
+                "layerId": args[0] if args else 11,
+                "contents": "Hello",
+                "isParagraphText": False,
+                "isPointText": True,
+                "orientation": "horizontal",
+                "textClickPoint": {"x": 12, "y": 24},
+                "typename": "TextItem",
+                "characterStyle": {"font": "ArialMT", "size": 24, "tracking": 10},
+                "paragraphStyle": {"justification": "left", "hyphenation": False},
+            }
+            if method == "getActive":
+                return payload
+            if method == "getByLayerId":
+                return payload if args[0] == 11 else None
+            if method == "setContents":
+                return {**payload, "contents": args[1]}
+            if method == "setCharacterStyle":
+                return {**payload, "characterStyle": {**payload["characterStyle"], **args[1]}}
+            if method == "setParagraphStyle":
+                return {**payload, "paragraphStyle": {**payload["paragraphStyle"], **args[1]}}
+            if method == "setTextClickPoint":
+                return {**payload, "textClickPoint": args[1]}
+            if method == "setOrientation":
+                return {**payload, "orientation": args[1]}
+            if method in {"resetCharacterStyle", "convertToParagraphText", "convertToPointText", "convertToShape", "createWorkPath"}:
+                return payload
         if namespace == "raw" and method == "evalJs":
             return {"source": args[0], "args": list(args[1:])}
         if namespace == "raw" and method == "getPath":
@@ -74,6 +102,8 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(app.active_layer.name, "Layer 1")
         self.assertFalse(app.active_layer.hasChildren)
         self.assertEqual(app.active_layer.layers[0].name, "Child")
+        self.assertEqual(app.activeText.contents, "Hello")
+        self.assertEqual(app.active_text.characterStyle.size, 24)
         self.assertEqual(app.selection.bounds["top"], 1)
         self.assertEqual(app.channels[0].name, "Alpha 1")
         selection = app.activeDocument.selection
@@ -115,6 +145,22 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(client.calls[-1]["options"]["commandName"], "Tone")
         app.activeDocument.saveAs("C:/x.psd", commandName="Save")
         app.activeDocument.export("C:/x.png", timeout_ms=3)
+        text = app.activeLayer.text_item
+        self.assertEqual(text.contents, "Hello")
+        self.assertTrue(text.isPointText)
+        self.assertEqual(text.textClickPoint["x"], 12)
+        self.assertEqual(text.setContents("World", commandName="Text").contents, "World")
+        self.assertEqual(client.calls[-1]["options"]["commandName"], "Text")
+        self.assertEqual(text.set_character_style({"size": 36}).character_style.size, 36)
+        self.assertEqual(text.characterStyle.update(tracking=25).characterStyle.tracking, 25)
+        self.assertEqual(text.paragraph_style.update({"justification": "center"}).paragraphStyle.justification, "center")
+        text.setTextClickPoint({"x": 1, "y": 2})
+        text.set_orientation("vertical")
+        text.characterStyle.reset()
+        text.convertToParagraphText()
+        text.convert_to_point_text()
+        text.convert_to_shape()
+        text.createWorkPath()
         app.activeLayer.hide()
         self.assertTrue(client.calls[-1]["options"]["modal"])
         self.assertIsInstance(connect_photoshop(broker_url="http://x"), Photoshop)

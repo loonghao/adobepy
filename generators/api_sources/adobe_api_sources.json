@@ -79,11 +79,11 @@
         },
         {
           "name": "Text and typography",
-          "level": "planned",
+          "level": "mvp",
           "trackedBy": 6,
           "docRefs": ["Photoshop UXP API"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "irNamespaces": ["text"],
+          "facadeObjects": ["TextItemProxy", "CharacterStyleProxy", "ParagraphStyleProxy"]
         },
         {
           "name": "Smart objects, filters, and export presets",

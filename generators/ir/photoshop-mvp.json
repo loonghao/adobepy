@@ -14,7 +14,8 @@
         {"name": "active_layer", "type": "Layer | None", "source": "layer.getActive"},
         {"name": "active_layers", "type": "list[Layer]", "source": "document.getActiveLayers"},
         {"name": "selection", "type": "Selection | None", "source": "selection.get"},
-        {"name": "channels", "type": "list[Channel]", "source": "channel.getChannels"}
+        {"name": "channels", "type": "list[Channel]", "source": "channel.getChannels"},
+        {"name": "active_text", "type": "TextItem | None", "source": "text.getActive"}
       ]
     },
     {
@@ -67,6 +68,23 @@
         {"name": "remove", "returns": "Channel", "mutatesState": true, "requiresModalWhenMutating": true}
       ]
     },
+    {
+      "name": "text",
+      "methods": [
+        {"name": "getActive", "returns": "TextItem | None"},
+        {"name": "getByLayerId", "returns": "TextItem | None"},
+        {"name": "setContents", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setCharacterStyle", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setParagraphStyle", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setTextClickPoint", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setOrientation", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "resetCharacterStyle", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "convertToParagraphText", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "convertToPointText", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "convertToShape", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "createWorkPath", "returns": "TextItem", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
     {"name": "action", "methods": [{"name": "batchPlay", "returns": "Any", "mutatesState": true, "requiresModalWhenMutating": true}]},
     {
       "name": "raw",
@@ -115,6 +133,7 @@
         {"name": "visible", "type": "bool | None"},
         {"name": "typename", "type": "str | None"},
         {"name": "has_children", "type": "bool"},
+        {"name": "text_item", "type": "TextItem | None"},
         {"name": "layers", "type": "list[Layer]"}
       ],
       "methods": [{"name": "hide", "returns": "Any"}]
@@ -157,6 +176,45 @@
         {"name": "typename", "type": "str | None"}
       ],
       "methods": [{"name": "remove", "returns": "Channel"}]
+    },
+    {
+      "name": "TextItemProxy",
+      "properties": [
+        {"name": "layer_id", "type": "int | str | None"},
+        {"name": "contents", "type": "str | None"},
+        {"name": "is_paragraph_text", "type": "bool | None"},
+        {"name": "is_point_text", "type": "bool | None"},
+        {"name": "orientation", "type": "str | None"},
+        {"name": "text_click_point", "type": "dict[str, Any] | None"},
+        {"name": "typename", "type": "str | None"},
+        {"name": "character_style", "type": "CharacterStyleProxy"},
+        {"name": "paragraph_style", "type": "ParagraphStyleProxy"}
+      ],
+      "methods": [
+        {"name": "refresh", "returns": "TextItem"},
+        {"name": "setContents", "returns": "TextItem"},
+        {"name": "setCharacterStyle", "returns": "TextItem"},
+        {"name": "setParagraphStyle", "returns": "TextItem"},
+        {"name": "setTextClickPoint", "returns": "TextItem"},
+        {"name": "setOrientation", "returns": "TextItem"},
+        {"name": "convertToParagraphText", "returns": "TextItem"},
+        {"name": "convertToPointText", "returns": "TextItem"},
+        {"name": "convertToShape", "returns": "TextItem"},
+        {"name": "createWorkPath", "returns": "TextItem"}
+      ]
+    },
+    {
+      "name": "CharacterStyleProxy",
+      "properties": [],
+      "methods": [
+        {"name": "update", "returns": "TextItem"},
+        {"name": "reset", "returns": "TextItem"}
+      ]
+    },
+    {
+      "name": "ParagraphStyleProxy",
+      "properties": [],
+      "methods": [{"name": "update", "returns": "TextItem"}]
     },
     {
       "name": "PhotoshopDomProxy",

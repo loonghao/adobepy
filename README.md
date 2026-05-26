@@ -60,4 +60,10 @@ doc = app.activeDocument
 doc.selection.select_rectangle({"top": 10, "left": 10, "bottom": 256, "right": 256})
 for channel in doc.channels:
     print(channel.name)
+
+text = app.activeText
+if text:
+    text.set_contents("Hello from Python")
+    text.character_style.update(size=36, tracking=20)
+    text.paragraph_style.update(justification="center")
 ```
