@@ -177,7 +177,7 @@
       "runtimeModule": "premierepro",
       "entryPoint": "require('premierepro')",
       "ir": "generators/ir/premiere-mvp.json",
-      "trackedBy": [5, 7],
+      "trackedBy": [5, 7, 15],
       "officialDocs": [
         {
           "name": "Premiere Pro UXP API",
@@ -211,11 +211,11 @@
         },
         {
           "name": "Sequences, tracks, clips, and markers",
-          "level": "planned",
-          "trackedBy": 7,
+          "level": "mvp",
+          "trackedBy": 15,
           "docRefs": ["Premiere Pro DOM API"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "irNamespaces": ["sequence", "track", "clip", "marker"],
+          "facadeObjects": ["SequenceProxy", "TrackProxy", "ClipProxy", "MarkerProxy"]
         },
         {
           "name": "Project items, media import, and bins",

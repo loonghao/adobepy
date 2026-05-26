@@ -22,7 +22,9 @@ class ApiSourceTests(unittest.TestCase):
         self.assertGreater(by_host["photoshop"]["mvp"], by_host["premiere"]["mvp"])
         self.assertEqual(by_host["photoshop"]["planned"], 0)
         self.assertEqual(by_host["photoshop"]["percent"], 100.0)
-        self.assertIn("Sequences, tracks, clips, and markers", by_host["premiere"]["next"])
+        self.assertEqual(by_host["premiere"]["mvp"], 3)
+        self.assertNotIn("Sequences, tracks, clips, and markers", by_host["premiere"]["next"])
+        self.assertIn("Project items, media import, and bins", by_host["premiere"]["next"])
 
 
 if __name__ == "__main__":

@@ -262,6 +262,38 @@ class CapturingClient:
             return {"path": list(args[0]), "depth": args[1]}
         if namespace == "raw" and method == "callPath":
             return {"path": list(args[0]), "args": list(args[1]), "depth": args[2]}
+        if host == "premiere" and namespace == "project":
+            sequence = {
+                "id": "seq-1",
+                "sequenceId": "sequence-1",
+                "name": "Main edit",
+                "duration": 120.0,
+                "timebase": 25,
+                "typename": "Sequence",
+            }
+            if method == "getActive":
+                return {"id": "project-1", "guid": "project-1", "name": "cut", "path": "C:/cut", "itemCount": 3}
+            if method == "getSequences":
+                return [sequence]
+            if method == "getActiveSequence":
+                return sequence
+        if host == "premiere" and namespace == "sequence":
+            if method == "getVideoTracks":
+                return [{"id": "v1", "name": "V1", "index": 0, "mediaType": "video", "isLocked": False, "isMuted": False, "isTargeted": True}]
+            if method == "getAudioTracks":
+                return [{"id": "a1", "name": "A1", "index": 0, "mediaType": "audio", "isLocked": False, "isMuted": True, "isTargeted": False}]
+        if host == "premiere" and namespace == "track" and method == "getClips":
+            if args[1] == "audio":
+                return [{"id": "clip-a", "name": "dialog.wav", "mediaPath": "C:/media/dialog.wav", "start": 0, "end": 30, "duration": 30, "isEnabled": True}]
+            return [{"id": "clip-v", "name": "shot.mov", "projectItemId": "item-1", "mediaPath": "C:/media/shot.mov", "start": 0, "end": 30, "duration": 30, "isEnabled": True, "isSelected": True}]
+        if host == "premiere" and namespace == "clip" and method == "getSelected":
+            return [{"id": "clip-v", "name": "shot.mov", "projectItemId": "item-1", "mediaPath": "C:/media/shot.mov", "isSelected": True}]
+        if host == "premiere" and namespace == "marker":
+            marker = {"id": "marker-1", "name": "Beat", "comments": "cut here", "start": 12, "duration": 1, "markerType": "comment", "typename": "Marker"}
+            if method == "getMarkers":
+                return [marker]
+            if method == "create":
+                return {**marker, **args[1], "id": "marker-2"}
         if namespace == "project":
             return {"name": "cut", "path": "C:/cut", "itemCount": 3}
         return {"ok": True}
@@ -489,9 +521,23 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(indesign.activeDocument.exportFile("PDF_TYPE", "C:/out/demo.pdf", options={"preset": "Press"}, commandName="Export")["options"]["preset"], "Press")
         self.assertEqual(indesign.activeDocument.exports.interactivePdf("C:/out/demo-interactive.pdf", options={"showingOptions": True})["format"], "INTERACTIVE_PDF")
         self.assertTrue(indesign.activeDocument.package.forPrint("C:/out/package", commandName="Package")["ok"])
-        self.assertEqual(Premiere(client=CapturingClient()).activeProject.name, "cut")
-        self.assertEqual(Premiere(client=CapturingClient()).project.name, "cut")
-        self.assertEqual(Premiere(client=CapturingClient()).version, "25.6")
+        premiere_client = CapturingClient()
+        premiere = Premiere(client=premiere_client)
+        self.assertEqual(premiere.activeProject.name, "cut")
+        self.assertEqual(premiere.project.itemCount, 3)
+        self.assertEqual(premiere.version, "25.6")
+        self.assertEqual(premiere.sequences[0].sequenceId, "sequence-1")
+        self.assertEqual(premiere.active_sequence.name, "Main edit")
+        self.assertEqual(premiere.project.getSequence("Main edit").duration, 120.0)
+        sequence = premiere.project.activeSequence
+        self.assertEqual(sequence.videoTracks[0].name, "V1")
+        self.assertTrue(sequence.video_tracks[0].isTargeted)
+        self.assertEqual(sequence.video_tracks[0].clips[0].mediaPath, "C:/media/shot.mov")
+        self.assertEqual(sequence.audioTracks[0].clips[0].name, "dialog.wav")
+        self.assertEqual(sequence.selected_clips[0].projectItemId, "item-1")
+        self.assertEqual(sequence.markers[0].markerType, "comment")
+        self.assertEqual(sequence.create_marker("Review", start=42, command_name="Add marker").name, "Review")
+        self.assertEqual(premiere_client.calls[-1]["options"]["commandName"], "Add marker")
 
     def test_legacy_cep_facades(self):
         ae = AfterEffects(client=CapturingClient())

@@ -500,17 +500,64 @@ async function testInDesignBridge() {
 }
 
 async function testPremiereBridge() {
+  const events = [];
+  const videoClip = {
+    id: "clip-v",
+    name: "shot.mov",
+    projectItem: { id: "item-1", name: "shot.mov", mediaPath: "C:/media/shot.mov" },
+    start: 0,
+    end: 30,
+    duration: 30,
+    enabled: true,
+    selected: true,
+    typename: "TrackItem"
+  };
+  const audioClip = {
+    id: "clip-a",
+    name: "dialog.wav",
+    projectItem: { id: "item-2", name: "dialog.wav", mediaPath: "C:/media/dialog.wav" },
+    start: 0,
+    end: 30,
+    duration: 30,
+    enabled: true,
+    selected: false,
+    typename: "TrackItem"
+  };
+  const markers = [{ id: "marker-1", name: "Beat", comments: "cut here", start: 12, duration: 1, markerType: "comment", typename: "Marker" }];
+  markers.createMarker = (start) => {
+    const marker = { id: "marker-2", start, typename: "Marker" };
+    events.push({ kind: "marker.create", start });
+    markers.push(marker);
+    return marker;
+  };
+  const sequence = {
+    id: "seq-1",
+    sequenceId: "sequence-1",
+    name: "Main edit",
+    duration: 120,
+    timebase: 25,
+    typename: "Sequence",
+    videoTracks: [{ id: "v1", name: "V1", index: 0, locked: false, muted: false, targeted: true, clips: [videoClip], typename: "VideoTrack" }],
+    audioTracks: [{ id: "a1", name: "A1", index: 0, locked: false, muted: true, targeted: false, clips: [audioClip], typename: "AudioTrack" }],
+    markers
+  };
+  const project = { guid: "project-1", name: "cut.prproj", path: "C:/cut.prproj", itemCount: 3, sequences: [sequence], activeSequence: sequence };
   const env = await loadBundle("bridges/uxp/premiere/dist/main.js", {
     premierepro: {
       version: "25.6.0",
       Project: {
         getActiveProject() {
-          return { guid: "project-1", name: "cut.prproj", path: "C:/cut.prproj", itemCount: 3 };
+          return project;
         }
       }
     }
   });
   assert.strictEqual(env.sent[0].capabilities.host, "premiere");
+  assert.ok(env.sent[0].capabilities.methods.project.includes("getActiveSequence"));
+  assert.ok(env.sent[0].capabilities.methods.sequence.includes("getVideoTracks"));
+  assert.ok(env.sent[0].capabilities.methods.track.includes("getClips"));
+  assert.ok(env.sent[0].capabilities.methods.clip.includes("getSelected"));
+  assert.ok(env.sent[0].capabilities.methods.marker.includes("create"));
   assert.strictEqual(result(await rpc(env, "premiere", "app", "getVersion")), "25.6.0");
   assert.deepStrictEqual(result(await rpc(env, "premiere", "project", "getActive")), {
     id: "project-1",
@@ -519,6 +566,19 @@ async function testPremiereBridge() {
     path: "C:/cut.prproj",
     itemCount: 3
   });
+  assert.strictEqual(result(await rpc(env, "premiere", "project", "getSequences"))[0].sequenceId, "sequence-1");
+  assert.strictEqual(result(await rpc(env, "premiere", "project", "getActiveSequence")).name, "Main edit");
+  assert.strictEqual(result(await rpc(env, "premiere", "sequence", "getVideoTracks", ["seq-1"]))[0].isTargeted, true);
+  assert.strictEqual(result(await rpc(env, "premiere", "sequence", "getAudioTracks", ["seq-1"]))[0].isMuted, true);
+  assert.strictEqual(result(await rpc(env, "premiere", "track", "getClips", ["seq-1", "video", "v1"]))[0].mediaPath, "C:/media/shot.mov");
+  assert.strictEqual(result(await rpc(env, "premiere", "clip", "getSelected", ["seq-1"]))[0].isSelected, true);
+  assert.strictEqual(result(await rpc(env, "premiere", "marker", "getMarkers", ["seq-1"]))[0].comments, "cut here");
+  const created = result(await rpc(env, "premiere", "marker", "create", ["seq-1", { name: "Review", start: 42, comments: "check" }]));
+  assert.strictEqual(created.name, "Review");
+  assert.strictEqual(created.start, 42);
+  assert.ok(events.some((event) => event.kind === "marker.create" && event.start === 42));
+  delete markers.createMarker;
+  assert.strictEqual(error(await rpc(env, "premiere", "marker", "create", ["seq-1", { name: "Missing" }])).code, -32004);
   assert.strictEqual(result(await rpc(env, "premiere", "raw", "evalJs", ["6 * 7"])), 42);
 }
 
