@@ -26,6 +26,28 @@ The MVP facade modules are `adobe.photoshop`, `adobe.indesign`,
 hosts expose typed convenience properties for version/current project or
 document, plus raw ExtendScript through `adobe.raw`.
 
+InDesign mirrors common DOM names while keeping Pythonic aliases:
+
+```python
+from adobe.indesign import InDesign
+
+app = InDesign()
+doc = app.active_document
+
+for swatch in doc.swatches:
+    print(swatch.name, swatch.color_value)
+
+doc.add_color_swatch("Brand Blue", [10, 20, 200], space="RGB")
+
+for link in doc.links:
+    if link.status != "normal":
+        link.update()
+
+doc.getLink("hero.png").relink("C:/assets/hero-new.png")
+doc.exports.pdf("C:/out/layout.pdf")
+doc.package.for_print("C:/out/package")
+```
+
 ## Bridges
 
 ```powershell

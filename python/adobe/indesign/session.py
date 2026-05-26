@@ -216,6 +216,24 @@ class DocumentProxy:
         return self.character_styles
 
     @property
+    def swatches(self) -> list["SwatchProxy"]:
+        payload = self._session.invoke("swatch", "getSwatches", self.id)
+        return [SwatchProxy(swatch) for swatch in payload or []]
+
+    @property
+    def links(self) -> list["LinkProxy"]:
+        payload = self._session.invoke("link", "getLinks", self.id)
+        return [LinkProxy(self._session, self.id, link) for link in payload or []]
+
+    @property
+    def exports(self) -> "DocumentExportProxy":
+        return DocumentExportProxy(self)
+
+    @property
+    def package(self) -> "DocumentPackageProxy":
+        return DocumentPackageProxy(self)
+
+    @property
     def active_page(self) -> "PageProxy | None":
         payload = self._session.invoke("page", "getActive", self.id)
         return PageProxy(self._session, self.id, payload) if payload else None
@@ -274,6 +292,294 @@ class DocumentProxy:
 
     def getCharacterStyle(self, name: str) -> "CharacterStyleProxy | None":
         return self.get_character_style(name)
+
+    def get_swatch(self, name: str) -> "SwatchProxy | None":
+        payload = self._session.invoke("swatch", "getByName", self.id, name)
+        return SwatchProxy(payload) if payload else None
+
+    def getSwatch(self, name: str) -> "SwatchProxy | None":
+        return self.get_swatch(name)
+
+    def add_color_swatch(
+        self,
+        name: str,
+        color_value: list[Any],
+        *,
+        model: Any = None,
+        space: Any = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "SwatchProxy":
+        payload = self._session.invoke(
+            "swatch",
+            "addColor",
+            self.id,
+            {"name": name, "colorValue": color_value, "model": model, "space": space},
+            options=self._session.modal_options(
+                command_name=command_name,
+                default_command_name="Add color swatch",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        return SwatchProxy(payload or {})
+
+    def addColorSwatch(
+        self,
+        name: str,
+        colorValue: list[Any],
+        *,
+        model: Any = None,
+        space: Any = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "SwatchProxy":
+        return self.add_color_swatch(name, colorValue, model=model, space=space, command_name=commandName, timeout_ms=timeoutMs)
+
+    def get_link(self, name: str) -> "LinkProxy | None":
+        payload = self._session.invoke("link", "getByName", self.id, name)
+        return LinkProxy(self._session, self.id, payload) if payload else None
+
+    def getLink(self, name: str) -> "LinkProxy | None":
+        return self.get_link(name)
+
+    def export_file(
+        self,
+        format: Any,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> Any:
+        return self._session.invoke(
+            "export",
+            "exportFile",
+            {"id": self.id, "format": format, "path": path, "options": options or {}},
+            options=self._session.modal_options(
+                command_name=command_name,
+                default_command_name="Export document",
+                timeout_ms=timeout_ms,
+            ),
+        )
+
+    def exportFile(
+        self,
+        format: Any,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> Any:
+        return self.export_file(format, path, options=options, command_name=commandName, timeout_ms=timeoutMs)
+
+    def package_for_print(
+        self,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> dict[str, Any]:
+        payload = self._session.invoke(
+            "package",
+            "packageForPrint",
+            {"id": self.id, "path": path, "options": options or {}},
+            options=self._session.modal_options(
+                command_name=command_name,
+                default_command_name="Package document",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        return payload if isinstance(payload, dict) else {"ok": bool(payload), "path": path}
+
+    def packageForPrint(
+        self,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> dict[str, Any]:
+        return self.package_for_print(path, options=options, command_name=commandName, timeout_ms=timeoutMs)
+
+
+@dataclass
+class SwatchProxy:
+    _payload: dict[str, Any]
+
+    @property
+    def id(self) -> int | str | None:
+        return self._payload.get("id")
+
+    @property
+    def name(self) -> str | None:
+        return self._payload.get("name")
+
+    @property
+    def model(self) -> Any:
+        return self._payload.get("model")
+
+    @property
+    def space(self) -> Any:
+        return self._payload.get("space")
+
+    @property
+    def color_value(self) -> list[Any]:
+        value = self._payload.get("colorValue")
+        return list(value) if isinstance(value, list) else []
+
+    @property
+    def colorValue(self) -> list[Any]:
+        return self.color_value
+
+    @property
+    def is_valid(self) -> bool | None:
+        value = self._payload.get("isValid")
+        return bool(value) if value is not None else None
+
+    @property
+    def isValid(self) -> bool | None:
+        return self.is_valid
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+
+@dataclass
+class LinkProxy:
+    _session: InDesignSession
+    _document_id: int | str | None
+    _payload: dict[str, Any]
+
+    @property
+    def id(self) -> int | str | None:
+        return self._payload.get("id")
+
+    @property
+    def name(self) -> str | None:
+        return self._payload.get("name")
+
+    @property
+    def file_path(self) -> str | None:
+        return self._payload.get("filePath")
+
+    @property
+    def filePath(self) -> str | None:
+        return self.file_path
+
+    @property
+    def status(self) -> Any:
+        return self._payload.get("status")
+
+    @property
+    def link_type(self) -> str | None:
+        return self._payload.get("linkType")
+
+    @property
+    def linkType(self) -> str | None:
+        return self.link_type
+
+    @property
+    def is_valid(self) -> bool | None:
+        value = self._payload.get("isValid")
+        return bool(value) if value is not None else None
+
+    @property
+    def isValid(self) -> bool | None:
+        return self.is_valid
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+    def update(self, *, command_name: str | None = None, timeout_ms: int | None = None) -> "LinkProxy":
+        payload = self._session.invoke(
+            "link",
+            "update",
+            self._document_id,
+            self.id or self.name,
+            options=self._session.modal_options(
+                command_name=command_name,
+                default_command_name="Update link",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        self._payload = payload or {}
+        return self
+
+    def relink(self, path: str, *, command_name: str | None = None, timeout_ms: int | None = None) -> "LinkProxy":
+        payload = self._session.invoke(
+            "link",
+            "relink",
+            self._document_id,
+            self.id or self.name,
+            path,
+            options=self._session.modal_options(
+                command_name=command_name,
+                default_command_name="Relink asset",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        self._payload = payload or {}
+        return self
+
+
+class DocumentExportProxy:
+    def __init__(self, document: DocumentProxy) -> None:
+        self._document = document
+
+    def file(
+        self,
+        format: Any,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> Any:
+        return self._document.export_file(format, path, options=options, command_name=command_name, timeout_ms=timeout_ms)
+
+    def pdf(self, path: str, *, options: dict[str, Any] | None = None, command_name: str | None = None, timeout_ms: int | None = None) -> Any:
+        return self.file("PDF_TYPE", path, options=options, command_name=command_name, timeout_ms=timeout_ms)
+
+    def interactive_pdf(self, path: str, *, options: dict[str, Any] | None = None, command_name: str | None = None, timeout_ms: int | None = None) -> Any:
+        return self.file("INTERACTIVE_PDF", path, options=options, command_name=command_name, timeout_ms=timeout_ms)
+
+    def interactivePdf(self, path: str, *, options: dict[str, Any] | None = None, commandName: str | None = None, timeoutMs: int | None = None) -> Any:
+        return self.interactive_pdf(path, options=options, command_name=commandName, timeout_ms=timeoutMs)
+
+    def idml(self, path: str, *, options: dict[str, Any] | None = None, command_name: str | None = None, timeout_ms: int | None = None) -> Any:
+        return self.file("INDESIGN_MARKUP", path, options=options, command_name=command_name, timeout_ms=timeout_ms)
+
+    def epub(self, path: str, *, options: dict[str, Any] | None = None, command_name: str | None = None, timeout_ms: int | None = None) -> Any:
+        return self.file("EPUB", path, options=options, command_name=command_name, timeout_ms=timeout_ms)
+
+
+class DocumentPackageProxy:
+    def __init__(self, document: DocumentProxy) -> None:
+        self._document = document
+
+    def for_print(
+        self,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> dict[str, Any]:
+        return self._document.package_for_print(path, options=options, command_name=command_name, timeout_ms=timeout_ms)
+
+    def forPrint(
+        self,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> dict[str, Any]:
+        return self.for_print(path, options=options, command_name=commandName, timeout_ms=timeoutMs)
 
 
 @dataclass

@@ -216,6 +216,46 @@ class CapturingClient:
                 return {**paragraph_style, **args[2]}
             if method == "setCharacterStyleProperties":
                 return {**character_style, **args[2]}
+        if host == "indesign" and namespace == "swatch":
+            swatch = {
+                "id": 91,
+                "name": "Brand Blue",
+                "model": "process",
+                "space": "RGB",
+                "colorValue": [10, 20, 200],
+                "isValid": True,
+                "typename": "Color",
+            }
+            if method == "getSwatches":
+                return [swatch]
+            if method == "getByName":
+                return swatch if args[1] == "Brand Blue" else None
+            if method == "addColor":
+                return {**swatch, **args[1], "id": 92}
+        if host == "indesign" and namespace == "link":
+            link = {
+                "id": 101,
+                "name": "hero.png",
+                "filePath": "C:/assets/hero.png",
+                "status": "normal",
+                "linkType": "PNG",
+                "isValid": True,
+                "typename": "Link",
+            }
+            if method == "getLinks":
+                return [link]
+            if method == "getByName":
+                return link if args[1] == "hero.png" else None
+            if method == "update":
+                return {**link, "status": "updated"}
+            if method == "relink":
+                return {**link, "filePath": args[2], "status": "normal"}
+        if host == "indesign" and namespace == "export":
+            if method == "exportFile":
+                return {"id": args[0]["id"], "path": args[0]["path"], "format": args[0]["format"], "options": args[0]["options"]}
+        if host == "indesign" and namespace == "package":
+            if method == "packageForPrint":
+                return {"ok": True, "path": args[0]["path"], "document": {"id": args[0]["id"], "name": "demo"}}
         if namespace == "raw" and method == "evalJs":
             return {"source": args[0], "args": list(args[1:])}
         if namespace == "raw" and method == "getPath":
@@ -433,6 +473,22 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(character_style.leading, 12)
         self.assertEqual(character_style.tracking, 5)
         self.assertEqual(indesign.activeDocument.getCharacterStyle("Emphasis").update({"tracking": 20}).tracking, 20)
+        swatch = indesign.activeDocument.swatches[0]
+        self.assertEqual(swatch.name, "Brand Blue")
+        self.assertEqual(swatch.colorValue, [10, 20, 200])
+        self.assertTrue(swatch.isValid)
+        self.assertEqual(indesign.activeDocument.getSwatch("Brand Blue").space, "RGB")
+        self.assertEqual(indesign.activeDocument.add_color_swatch("Accent", [255, 200, 0], space="RGB", command_name="Color").name, "Accent")
+        self.assertEqual(indesign_client.calls[-1]["options"]["commandName"], "Color")
+        link = indesign.activeDocument.links[0]
+        self.assertEqual(link.filePath, "C:/assets/hero.png")
+        self.assertEqual(indesign.activeDocument.get_link("hero.png").link_type, "PNG")
+        self.assertEqual(link.update(command_name="Update link").status, "updated")
+        self.assertEqual(indesign_client.calls[-1]["options"]["commandName"], "Update link")
+        self.assertEqual(link.relink("C:/assets/hero-new.png", command_name="Relink").file_path, "C:/assets/hero-new.png")
+        self.assertEqual(indesign.activeDocument.exportFile("PDF_TYPE", "C:/out/demo.pdf", options={"preset": "Press"}, commandName="Export")["options"]["preset"], "Press")
+        self.assertEqual(indesign.activeDocument.exports.interactivePdf("C:/out/demo-interactive.pdf", options={"showingOptions": True})["format"], "INTERACTIVE_PDF")
+        self.assertTrue(indesign.activeDocument.package.forPrint("C:/out/package", commandName="Package")["ok"])
         self.assertEqual(Premiere(client=CapturingClient()).activeProject.name, "cut")
         self.assertEqual(Premiere(client=CapturingClient()).project.name, "cut")
         self.assertEqual(Premiere(client=CapturingClient()).version, "25.6")

@@ -59,6 +59,35 @@
         {"name": "setCharacterStyleProperties", "returns": "CharacterStyle", "mutatesState": true, "requiresModalWhenMutating": true}
       ]
     },
+    {
+      "name": "swatch",
+      "methods": [
+        {"name": "getSwatches", "returns": "list[Swatch]"},
+        {"name": "getByName", "returns": "Swatch | None"},
+        {"name": "addColor", "returns": "Swatch", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "link",
+      "methods": [
+        {"name": "getLinks", "returns": "list[Link]"},
+        {"name": "getByName", "returns": "Link | None"},
+        {"name": "update", "returns": "Link", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "relink", "returns": "Link", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "export",
+      "methods": [
+        {"name": "exportFile", "returns": "Any", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "package",
+      "methods": [
+        {"name": "packageForPrint", "returns": "dict[str, Any]", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
     {"name": "raw", "methods": [{"name": "evalJs", "returns": "Any", "raw": true}]}
   ],
   "proxies": [
@@ -79,6 +108,10 @@
         {"name": "stories", "type": "list[Story]"},
         {"name": "paragraph_styles", "type": "list[ParagraphStyle]"},
         {"name": "character_styles", "type": "list[CharacterStyle]"},
+        {"name": "swatches", "type": "list[Swatch]"},
+        {"name": "links", "type": "list[Link]"},
+        {"name": "exports", "type": "DocumentExportProxy"},
+        {"name": "package", "type": "DocumentPackageProxy"},
         {"name": "active_page", "type": "Page | None"},
         {"name": "active_spread", "type": "Spread | None"}
       ],
@@ -88,8 +121,57 @@
         {"name": "getTextFrame", "returns": "TextFrame | None"},
         {"name": "getStory", "returns": "Story | None"},
         {"name": "getParagraphStyle", "returns": "ParagraphStyle | None"},
-        {"name": "getCharacterStyle", "returns": "CharacterStyle | None"}
+        {"name": "getCharacterStyle", "returns": "CharacterStyle | None"},
+        {"name": "getSwatch", "returns": "Swatch | None"},
+        {"name": "addColorSwatch", "returns": "Swatch"},
+        {"name": "getLink", "returns": "Link | None"},
+        {"name": "exportFile", "returns": "Any"},
+        {"name": "packageForPrint", "returns": "dict[str, Any]"}
       ]
+    },
+    {
+      "name": "SwatchProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "model", "type": "Any"},
+        {"name": "space", "type": "Any"},
+        {"name": "color_value", "type": "list[Any]"},
+        {"name": "is_valid", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "LinkProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "file_path", "type": "str | None"},
+        {"name": "status", "type": "Any"},
+        {"name": "link_type", "type": "str | None"},
+        {"name": "is_valid", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ],
+      "methods": [
+        {"name": "update", "returns": "Link"},
+        {"name": "relink", "returns": "Link"}
+      ]
+    },
+    {
+      "name": "DocumentExportProxy",
+      "properties": [],
+      "methods": [
+        {"name": "file", "returns": "Any"},
+        {"name": "pdf", "returns": "Any"},
+        {"name": "interactivePdf", "returns": "Any"},
+        {"name": "idml", "returns": "Any"},
+        {"name": "epub", "returns": "Any"}
+      ]
+    },
+    {
+      "name": "DocumentPackageProxy",
+      "properties": [],
+      "methods": [{"name": "forPrint", "returns": "dict[str, Any]"}]
     },
     {
       "name": "TextSelectionProxy",

@@ -380,6 +380,51 @@ async function testInDesignBridge() {
   document.paragraphStyles.itemByName = (name) => document.paragraphStyles.find((style) => style.name === name);
   document.characterStyles = [characterStyle];
   document.characterStyles.itemByName = (name) => document.characterStyles.find((style) => style.name === name);
+  const swatch = {
+    id: 91,
+    name: "Brand Blue",
+    model: "process",
+    space: "RGB",
+    colorValue: [10, 20, 200],
+    isValid: true,
+    typename: "Color"
+  };
+  document.swatches = [swatch];
+  document.swatches.itemByName = (name) => document.swatches.find((item) => item.name === name);
+  document.colors = {
+    add(properties) {
+      const added = { id: 92, typename: "Color", isValid: true, ...properties };
+      document.swatches.push(added);
+      return added;
+    }
+  };
+  const link = {
+    id: 101,
+    name: "hero.png",
+    filePath: "C:/assets/hero.png",
+    status: "normal",
+    linkType: "PNG",
+    isValid: true,
+    typename: "Link",
+    update() {
+      events.push({ kind: "link.update" });
+      this.status = "updated";
+    },
+    relink(file) {
+      events.push({ kind: "link.relink", file });
+      this.filePath = file;
+    }
+  };
+  document.links = [link];
+  document.links.itemByName = (name) => document.links.find((item) => item.name === name);
+  document.exportFile = (format, file, showingOptions, using) => {
+    events.push({ kind: "document.exportFile", format, file, showingOptions, using });
+    return true;
+  };
+  document.packageForPrint = (folder, copyingFonts, copyingLinkedGraphics) => {
+    events.push({ kind: "document.packageForPrint", folder, copyingFonts, copyingLinkedGraphics });
+    return true;
+  };
   const env = await loadBundle("bridges/uxp/indesign/dist/main.js", {
     indesign: {
       app: {
@@ -401,6 +446,10 @@ async function testInDesignBridge() {
   assert.ok(env.sent[0].capabilities.methods.text.includes("getTextFrames"));
   assert.ok(env.sent[0].capabilities.methods.story.includes("getStories"));
   assert.ok(env.sent[0].capabilities.methods.style.includes("getParagraphStyles"));
+  assert.ok(env.sent[0].capabilities.methods.swatch.includes("addColor"));
+  assert.ok(env.sent[0].capabilities.methods.link.includes("relink"));
+  assert.ok(env.sent[0].capabilities.methods.export.includes("exportFile"));
+  assert.ok(env.sent[0].capabilities.methods.package.includes("packageForPrint"));
   assert.strictEqual(result(await rpc(env, "indesign", "app", "getVersion")), "19.5.0");
   assert.strictEqual(result(await rpc(env, "indesign", "document", "getActive")).pageCount, 2);
   assert.strictEqual(result(await rpc(env, "indesign", "page", "getPages", [3]))[1].documentOffset, 1);
@@ -424,10 +473,30 @@ async function testInDesignBridge() {
   assert.strictEqual(result(await rpc(env, "indesign", "style", "getCharacterStyleByName", [3, "Emphasis"])).tracking, 5);
   assert.strictEqual(result(await rpc(env, "indesign", "style", "setParagraphStyleProperties", [3, "Body", { pointSize: 12 }], { commandName: "Paragraph" })).pointSize, 12);
   assert.strictEqual(result(await rpc(env, "indesign", "style", "setCharacterStyleProperties", [3, "Emphasis", { tracking: 20 }], { commandName: "Character" })).tracking, 20);
+  assert.strictEqual(result(await rpc(env, "indesign", "swatch", "getSwatches", [3]))[0].colorValue[2], 200);
+  assert.strictEqual(result(await rpc(env, "indesign", "swatch", "getByName", [3, "Brand Blue"])).space, "RGB");
+  assert.strictEqual(result(await rpc(env, "indesign", "swatch", "addColor", [3, { name: "Accent", space: "RGB", colorValue: [255, 200, 0] }], { commandName: "Color" })).name, "Accent");
+  assert.strictEqual(result(await rpc(env, "indesign", "link", "getLinks", [3]))[0].filePath, "C:/assets/hero.png");
+  assert.strictEqual(result(await rpc(env, "indesign", "link", "getByName", [3, "hero.png"])).linkType, "PNG");
+  assert.strictEqual(result(await rpc(env, "indesign", "link", "update", [3, "hero.png"], { commandName: "Update link" })).status, "updated");
+  assert.strictEqual(result(await rpc(env, "indesign", "link", "relink", [3, "hero.png", "C:/assets/hero-new.png"], { commandName: "Relink" })).filePath, "file:///C:/assets/hero-new.png");
+  assert.strictEqual(
+    result(await rpc(env, "indesign", "export", "exportFile", [{ id: 3, format: "PDF_TYPE", path: "C:/out/layout.pdf", options: { preset: "Press", showingOptions: true } }], { commandName: "Export" })).name,
+    "layout.indd"
+  );
+  assert.strictEqual(result(await rpc(env, "indesign", "package", "packageForPrint", [{ id: 3, path: "C:/out/package", options: { copyingFonts: true } }], { commandName: "Package" })).ok, true);
+  const packageForPrint = document.packageForPrint;
+  delete document.packageForPrint;
+  assert.strictEqual(error(await rpc(env, "indesign", "package", "packageForPrint", [{ id: 3, path: "C:/out/missing-package" }])).code, -32004);
+  document.packageForPrint = packageForPrint;
   assert.strictEqual(result(await rpc(env, "indesign", "raw", "evalJs", ["40 + 2"])), 42);
   assert.ok(events.some((event) => event.kind === "page.select" && event.existingSelection === "replace"));
   assert.ok(events.some((event) => event.kind === "doScript" && event.commandName === "Text"));
   assert.ok(events.some((event) => event.kind === "doScript" && event.commandName === "Story"));
+  assert.ok(events.some((event) => event.kind === "link.update"));
+  assert.ok(events.some((event) => event.kind === "link.relink" && event.file === "file:///C:/assets/hero-new.png"));
+  assert.ok(events.some((event) => event.kind === "document.exportFile" && event.format === "PDF_TYPE" && event.using === "Press" && event.showingOptions === true));
+  assert.ok(events.some((event) => event.kind === "document.packageForPrint" && event.copyingFonts === true));
 }
 
 async function testPremiereBridge() {

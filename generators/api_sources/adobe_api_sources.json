@@ -113,7 +113,7 @@
       "runtimeModule": "indesign",
       "entryPoint": "require('indesign').app",
       "ir": "generators/ir/indesign-mvp.json",
-      "trackedBy": [5, 7],
+      "trackedBy": [5, 7, 14],
       "officialDocs": [
         {
           "name": "InDesign DOM APIs",
@@ -163,11 +163,11 @@
         },
         {
           "name": "Swatches, colors, links, and export/package workflows",
-          "level": "planned",
-          "trackedBy": 7,
+          "level": "mvp",
+          "trackedBy": 14,
           "docRefs": ["InDesign DOM reference"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "irNamespaces": ["swatch", "link", "export", "package"],
+          "facadeObjects": ["SwatchProxy", "LinkProxy", "DocumentExportProxy", "DocumentPackageProxy"]
         }
       ]
     },

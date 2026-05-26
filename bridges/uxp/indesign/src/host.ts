@@ -1,7 +1,7 @@
 import { methodNotFound, unavailable } from "../../core/src/errors";
 import type { HostAdapter } from "../../core/src/host-adapter";
 import type { RpcRequest } from "../../core/src/protocol";
-import { asArray, asNumber, asString, evalJavaScript, isObject, maybePromise, optionalRequire, property } from "../../core/src/runtime";
+import { asArray, asNumber, asString, evalJavaScript, isObject, maybePromise, optionalRequire, property, toFileUrl } from "../../core/src/runtime";
 
 type Callable = (...args: unknown[]) => unknown;
 
@@ -12,7 +12,7 @@ export const indesignAdapter: HostAdapter = {
       bridgeKind: "uxp",
       bridgeVersion: "0.1.0",
       hostVersion: indesignVersion(),
-      namespaces: ["app", "document", "page", "spread", "text", "story", "style", "raw"],
+      namespaces: ["app", "document", "page", "spread", "text", "story", "style", "swatch", "link", "export", "package", "raw"],
       features: ["dom"],
       methods: {
         app: ["getVersion"],
@@ -29,6 +29,10 @@ export const indesignAdapter: HostAdapter = {
           "setParagraphStyleProperties",
           "setCharacterStyleProperties"
         ],
+        swatch: ["getSwatches", "getByName", "addColor"],
+        link: ["getLinks", "getByName", "update", "relink"],
+        export: ["exportFile"],
+        package: ["packageForPrint"],
         raw: ["evalJs"]
       }
     };
@@ -61,6 +65,15 @@ export const indesignAdapter: HostAdapter = {
     if (request.namespace === "style" && request.method === "setCharacterStyleProperties") {
       return styleSetProperties(request, "characterStyles", serializeCharacterStyle, "Update character style");
     }
+    if (request.namespace === "swatch" && request.method === "getSwatches") return documentSwatches(request);
+    if (request.namespace === "swatch" && request.method === "getByName") return serializeSwatch(findSwatch(request.args?.[0], request.args?.[1]));
+    if (request.namespace === "swatch" && request.method === "addColor") return swatchAddColor(request);
+    if (request.namespace === "link" && request.method === "getLinks") return documentLinks(request);
+    if (request.namespace === "link" && request.method === "getByName") return serializeLink(findLink(request.args?.[0], request.args?.[1]));
+    if (request.namespace === "link" && request.method === "update") return linkUpdate(request);
+    if (request.namespace === "link" && request.method === "relink") return linkRelink(request);
+    if (request.namespace === "export" && request.method === "exportFile") return documentExportFile(request);
+    if (request.namespace === "package" && request.method === "packageForPrint") return documentPackageForPrint(request);
     if (request.namespace === "raw" && request.method === "evalJs") return evalJavaScript(asString(request.args?.[0]) ?? "", request.args?.slice(1) ?? []);
     methodNotFound(request.namespace, request.method);
   }
@@ -227,6 +240,37 @@ function serializeStyle(style: unknown, keys: string[]) {
   return output;
 }
 
+function serializeSwatch(swatch: unknown) {
+  if (!isObject(swatch)) return null;
+  return {
+    id: property(swatch, "id"),
+    name: asString(property(swatch, "name")),
+    model: scalarValue(property(swatch, "model")),
+    space: scalarValue(property(swatch, "space")),
+    colorValue: asArray(property(swatch, "colorValue")),
+    isValid: property(swatch, "isValid"),
+    typename: asString(property(swatch, "typename"))
+  };
+}
+
+function serializeLink(link: unknown) {
+  if (!isObject(link)) return null;
+  const filePath =
+    asString(property(link, "filePath")) ??
+    asString(property(property(link, "filePath"), "fsName")) ??
+    asString(property(property(link, "file"), "fsName")) ??
+    asString(property(link, "path"));
+  return {
+    id: property(link, "id"),
+    name: asString(property(link, "name")),
+    filePath,
+    status: scalarValue(property(link, "status")),
+    linkType: asString(property(link, "linkType")),
+    isValid: property(link, "isValid"),
+    typename: asString(property(link, "typename"))
+  };
+}
+
 function serializeBounds(bounds: unknown) {
   return asArray(bounds).map((value) => asNumber(value) ?? value);
 }
@@ -320,6 +364,18 @@ function documentStyles(request: RpcRequest, collectionName: string, serializer:
   return asArray(property(document, collectionName)).map(serializer).filter((style) => style !== null);
 }
 
+function documentSwatches(request: RpcRequest) {
+  const document = findDocument(request.args?.[0]);
+  if (!document) return [];
+  return asArray(property(document, "swatches")).map(serializeSwatch).filter((swatch) => swatch !== null);
+}
+
+function documentLinks(request: RpcRequest) {
+  const document = findDocument(request.args?.[0]);
+  if (!document) return [];
+  return asArray(property(document, "links")).map(serializeLink).filter((link) => link !== null);
+}
+
 function selectedText() {
   return asArray(property(indesignApp(), "selection")).find((item) => property(item, "contents") !== undefined);
 }
@@ -383,6 +439,152 @@ function findStyle(documentId: unknown, collectionName: string, name: unknown) {
     }
   }
   return asArray(collection).find((style) => String(property(style, "id")) === String(name) || asString(property(style, "name")) === String(name));
+}
+
+function findSwatch(documentId: unknown, idOrName: unknown) {
+  if (idOrName === undefined || idOrName === null) return undefined;
+  const document = findDocument(documentId);
+  const swatches = property(document, "swatches");
+  const byName = property<Callable>(swatches, "itemByName");
+  if (byName && typeof idOrName === "string") {
+    try {
+      const swatch = byName.call(swatches, idOrName);
+      if (swatch) return swatch;
+    } catch {
+      // Continue with manual matching when the host throws for a missing swatch.
+    }
+  }
+  return asArray(swatches).find((swatch) => String(property(swatch, "id")) === String(idOrName) || asString(property(swatch, "name")) === String(idOrName));
+}
+
+function findLink(documentId: unknown, idOrName: unknown) {
+  if (idOrName === undefined || idOrName === null) return undefined;
+  const document = findDocument(documentId);
+  const links = property(document, "links");
+  const byName = property<Callable>(links, "itemByName");
+  if (byName && typeof idOrName === "string") {
+    try {
+      const link = byName.call(links, idOrName);
+      if (link) return link;
+    } catch {
+      // Continue with manual matching when the host throws for a missing link.
+    }
+  }
+  return asArray(links).find((link) => String(property(link, "id")) === String(idOrName) || asString(property(link, "name")) === String(idOrName));
+}
+
+async function swatchAddColor(request: RpcRequest) {
+  const document = findDocument(request.args?.[0]);
+  if (!document) unavailable("InDesign document");
+  const payload = isObject(request.args?.[1]) ? request.args?.[1] : {};
+  const name = asString(property(payload, "name")) ?? "Color";
+  const colorValue = asArray(property(payload, "colorValue"));
+  const properties: Record<string, unknown> = {
+    name,
+    model: property(payload, "model"),
+    space: property(payload, "space"),
+    colorValue
+  };
+  return withInDesignCommand(request, "Add color swatch", async () => {
+    const colors = property(document, "colors") ?? property(document, "swatches");
+    const add = property<Callable>(colors, "add");
+    if (add) return serializeSwatch(await maybePromise(add.call(colors, properties)));
+    const swatches = asArray(property(document, "swatches"));
+    const swatch = { ...properties, id: name, isValid: true, typename: "Color" };
+    swatches.push(swatch);
+    return serializeSwatch(swatch);
+  });
+}
+
+async function linkUpdate(request: RpcRequest) {
+  const link = findLink(request.args?.[0], request.args?.[1]);
+  if (!link) unavailable("InDesign link");
+  return withInDesignCommand(request, "Update link", async () => {
+    const update = property<Callable>(link, "update");
+    if (update) await maybePromise(update.call(link));
+    return serializeLink(link);
+  });
+}
+
+async function linkRelink(request: RpcRequest) {
+  const link = findLink(request.args?.[0], request.args?.[1]);
+  if (!link) unavailable("InDesign link");
+  const path = asString(request.args?.[2]);
+  if (!path) unavailable("InDesign relink path");
+  return withInDesignCommand(request, "Relink asset", async () => {
+    const relink = property<Callable>(link, "relink");
+    if (!relink) unavailable("InDesign link.relink");
+    await maybePromise(relink.call(link, fileReference(path)));
+    return serializeLink(link);
+  });
+}
+
+async function documentExportFile(request: RpcRequest) {
+  const payload = requestPayload(request);
+  const document = findDocument(property(payload, "id") ?? request.args?.[0]);
+  if (!document) unavailable("InDesign document");
+  const format = property(payload, "format") ?? request.args?.[1];
+  const path = asString(property(payload, "path") ?? request.args?.[2]);
+  if (!path) unavailable("InDesign export path");
+  const rawExportOptions = property(payload, "options");
+  const exportOptions: Record<string, unknown> = isObject(rawExportOptions) ? rawExportOptions : {};
+  return withInDesignCommand(request, "Export document", async () => {
+    const exportFile = property<Callable>(document, "exportFile");
+    if (!exportFile) unavailable("InDesign document.exportFile");
+    const showingOptions = property(payload, "showingOptions") === true || property(exportOptions, "showingOptions") === true;
+    const using = property(payload, "preset") ?? property(exportOptions, "preset") ?? (Object.keys(exportOptions).length ? exportOptions : undefined);
+    await maybePromise(exportFile.call(document, format, fileReference(path), showingOptions, using));
+    return serializeDocument(document);
+  });
+}
+
+async function documentPackageForPrint(request: RpcRequest) {
+  const payload = requestPayload(request);
+  const document = findDocument(property(payload, "id") ?? request.args?.[0]);
+  if (!document) unavailable("InDesign document");
+  const path = asString(property(payload, "path") ?? request.args?.[1]);
+  if (!path) unavailable("InDesign package path");
+  const options = isObject(property(payload, "options")) ? property(payload, "options") : {};
+  return withInDesignCommand(request, "Package document", async () => {
+    const packageForPrint = property<Callable>(document, "packageForPrint");
+    if (!packageForPrint) unavailable("InDesign document.packageForPrint");
+    const result = await maybePromise(
+      packageForPrint.call(
+        document,
+        fileReference(path),
+        optionBool(options, "copyingFonts", true),
+        optionBool(options, "copyingLinkedGraphics", true),
+        optionBool(options, "copyingProfiles", true),
+        optionBool(options, "updatingGraphics", true),
+        optionBool(options, "includingHiddenLayers", true),
+        optionBool(options, "ignorePreflightErrors", false),
+        optionBool(options, "creatingReport", true),
+        optionBool(options, "includeIdml", false),
+        optionBool(options, "includePdf", false),
+        asString(property(options, "pdfStyle")) ?? "",
+        optionBool(options, "useDocumentHyphenationExceptionsOnly", false),
+        asString(property(options, "versionComments")) ?? "",
+        optionBool(options, "forceSave", false)
+      )
+    );
+    return { ok: result !== false, path, document: serializeDocument(document) };
+  });
+}
+
+function requestPayload(request: RpcRequest): Record<string, unknown> {
+  const payload = request.args?.[0];
+  return isObject(payload) ? payload : {};
+}
+
+function optionBool(options: unknown, key: string, fallback: boolean): boolean {
+  const value = property(options, key);
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function fileReference(path: string) {
+  const fileCtor = (globalThis as unknown as { File?: new (path: string) => unknown }).File;
+  if (fileCtor) return new fileCtor(path);
+  return toFileUrl(path);
 }
 
 async function styleSetProperties(
