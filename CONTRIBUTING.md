@@ -14,6 +14,10 @@ audit.
 - Prefer generated or schema-backed facade additions over hand-written drift.
   When hand-writing a method, add the IR and bridge capability update in the
   same change.
+- In IR, declare every method's `returns` type. Use `mutatesState` and
+  `requiresModalWhenMutating` for state-changing host calls, and mark raw
+  JavaScript or ExtendScript escape hatches with `"raw": true` under the `raw`
+  namespace.
 - Preserve both JS-shaped names and Pythonic aliases when exposing Adobe DOM
   concepts.
 - Use explicit capability checks for optional host methods. Do not make callers
@@ -40,6 +44,7 @@ Architecture-specific checks:
 
 ```powershell
 npm run architecture:check
+npm run ir:validate
 ```
 
 New code should include tests at the lowest stable layer:

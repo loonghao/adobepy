@@ -8,7 +8,7 @@
       "properties": [{"name": "active_document", "type": "Document | None", "source": "document.getActive"}]
     },
     {"name": "document", "methods": [{"name": "getActive", "returns": "Document | None"}]},
-    {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any"}]}
+    {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any", "raw": true}]}
   ],
   "proxies": [
     {

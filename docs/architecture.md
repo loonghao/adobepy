@@ -25,6 +25,10 @@ The stable adapter-facing wire contract is documented in
 ## Method Addition Flow
 
 1. Add or update the host method in `generators/ir/<host>-mvp.json`.
+   Every method must declare `returns`; mutating methods should set
+   `mutatesState`, modal writes should also set
+   `requiresModalWhenMutating`, and raw JavaScript/ExtendScript escape hatches
+   must live under the `raw` namespace with `"raw": true`.
 2. Add the official API source or note in
    `generators/api_sources/adobe_api_sources.json` if the method comes from a
    new documentation surface.
@@ -50,6 +54,8 @@ The stable adapter-facing wire contract is documented in
 - Every camelCase facade member has a snake_case Pythonic sibling.
 - Every supported host has IR, API source metadata, Python facade package, and
   `py.typed`.
+- Runtime facade `invoke(namespace, method)` pairs are declared in the host IR,
+  and bridge hello capabilities are checked against the same IR.
 
 ## Automated Gate
 
@@ -58,5 +64,5 @@ npm run architecture:check
 ```
 
 The gate checks host/package parity, `py.typed` markers, import direction,
-camelCase-to-snake_case alias pairs, and bridge-core host neutrality. It is part
-of `npm run test:quick`.
+camelCase-to-snake_case alias pairs, runtime facade invoke declarations, and
+bridge-core host neutrality. It is part of `npm run test:quick`.

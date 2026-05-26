@@ -59,7 +59,7 @@
         {"name": "setCharacterStyleProperties", "returns": "CharacterStyle", "mutatesState": true, "requiresModalWhenMutating": true}
       ]
     },
-    {"name": "raw", "methods": [{"name": "evalJs", "returns": "Any"}]}
+    {"name": "raw", "methods": [{"name": "evalJs", "returns": "Any", "raw": true}]}
   ],
   "proxies": [
     {

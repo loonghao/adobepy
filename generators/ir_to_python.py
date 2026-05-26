@@ -15,27 +15,33 @@ class IrValidationError(ValueError):
 
 
 IDENTIFIER_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+MEMBER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 @dataclass(frozen=True)
 class MethodIr:
     name: str
-    returns: str = "Any"
+    returns: str
     mutates_state: bool = False
     requires_modal_when_mutating: bool = False
+    raw: bool = False
 
     @classmethod
     def from_mapping(cls, payload: dict[str, Any]) -> "MethodIr":
         name = required_string(payload, "name")
-        mutates_state = bool(payload.get("mutatesState", False))
-        requires_modal = bool(payload.get("requiresModalWhenMutating", False))
+        ensure_member_name(name, f"method {name}")
+        returns = required_string(payload, "returns")
+        mutates_state = optional_bool(payload, "mutatesState", default=False)
+        requires_modal = optional_bool(payload, "requiresModalWhenMutating", default=False)
+        raw = optional_bool(payload, "raw", default=False)
         if requires_modal and not mutates_state:
             raise IrValidationError(f"method {name} sets requiresModalWhenMutating without mutatesState")
         return cls(
             name=name,
-            returns=str(payload.get("returns", "Any")),
+            returns=returns,
             mutates_state=mutates_state,
             requires_modal_when_mutating=requires_modal,
+            raw=raw,
         )
 
 
@@ -47,8 +53,10 @@ class PropertyIr:
 
     @classmethod
     def from_mapping(cls, payload: dict[str, Any]) -> "PropertyIr":
+        name = required_string(payload, "name")
+        ensure_pythonic_property_name(name, f"property {name}")
         return cls(
-            name=required_string(payload, "name"),
+            name=name,
             type=required_string(payload, "type"),
             source=required_string(payload, "source"),
         )
@@ -61,8 +69,10 @@ class FacadePropertyIr:
 
     @classmethod
     def from_mapping(cls, payload: dict[str, Any]) -> "FacadePropertyIr":
+        name = required_string(payload, "name")
+        ensure_pythonic_property_name(name, f"facade property {name}")
         return cls(
-            name=required_string(payload, "name"),
+            name=name,
             type=required_string(payload, "type"),
         )
 
@@ -70,13 +80,15 @@ class FacadePropertyIr:
 @dataclass(frozen=True)
 class FacadeMethodIr:
     name: str
-    returns: str = "Any"
+    returns: str
 
     @classmethod
     def from_mapping(cls, payload: dict[str, Any]) -> "FacadeMethodIr":
+        name = required_string(payload, "name")
+        ensure_member_name(name, f"facade method {name}")
         return cls(
-            name=required_string(payload, "name"),
-            returns=str(payload.get("returns", "Any")),
+            name=name,
+            returns=required_string(payload, "returns"),
         )
 
 
@@ -95,6 +107,10 @@ class ProxyIr:
         methods = tuple(FacadeMethodIr.from_mapping(item) for item in payload.get("methods", ()))
         ensure_unique_names(properties, f"proxy {name}: property")
         ensure_unique_names(methods, f"proxy {name}: method")
+        ensure_unique_public_names(
+            (*properties, *methods),
+            f"proxy {name}",
+        )
         return cls(name=name, properties=properties, methods=methods)
 
 
@@ -107,10 +123,18 @@ class NamespaceIr:
     @classmethod
     def from_mapping(cls, payload: dict[str, Any]) -> "NamespaceIr":
         name = required_string(payload, "name")
+        ensure_member_name(name, f"namespace {name}")
         methods = tuple(MethodIr.from_mapping(item) for item in payload.get("methods", ()))
         properties = tuple(PropertyIr.from_mapping(item) for item in payload.get("properties", ()))
         ensure_unique_names(methods, f"{name}: method")
         ensure_unique_names(properties, f"{name}: property")
+        ensure_unique_public_names(methods, f"{name}: method aliases")
+        ensure_unique_public_names(properties, f"{name}: property aliases")
+        for method in methods:
+            if name == "raw" and not method.raw:
+                raise IrValidationError(f"raw namespace method {method.name} must set raw true")
+            if name != "raw" and method.raw:
+                raise IrValidationError(f"non-raw method {name}.{method.name} must not set raw true")
         return cls(name=name, methods=methods, properties=properties)
 
 
@@ -161,6 +185,24 @@ def required_string(payload: dict[str, Any], name: str) -> str:
     return value
 
 
+def optional_bool(payload: dict[str, Any], name: str, *, default: bool) -> bool:
+    value = payload.get(name, default)
+    if not isinstance(value, bool):
+        raise IrValidationError(f"optional boolean field must be bool: {name}")
+    return value
+
+
+def ensure_member_name(name: str, context: str) -> None:
+    if not MEMBER_RE.match(name) or keyword.iskeyword(name):
+        raise IrValidationError(f"invalid {context}")
+
+
+def ensure_pythonic_property_name(name: str, context: str) -> None:
+    ensure_member_name(name, context)
+    if snake_case(name) != name:
+        raise IrValidationError(f"{context} must be snake_case; camelCase aliases are generated")
+
+
 def ensure_unique_names(items: tuple[Any, ...], context: str) -> None:
     seen: set[str] = set()
     for item in items:
@@ -168,6 +210,37 @@ def ensure_unique_names(items: tuple[Any, ...], context: str) -> None:
         if name in seen:
             raise IrValidationError(f"duplicate {context} {name}")
         seen.add(name)
+
+
+def public_names_for_item(item: Any) -> tuple[str, ...]:
+    name = getattr(item, "name", None)
+    if not isinstance(name, str):
+        return ()
+    if isinstance(item, (PropertyIr, FacadePropertyIr)):
+        aliases = [name]
+        camel = camel_case(name)
+        if camel != name:
+            aliases.append(camel)
+        return tuple(aliases)
+    if isinstance(item, (MethodIr, FacadeMethodIr)):
+        aliases = [snake_case(name)]
+        if aliases[0] != name:
+            aliases.append(name)
+        return tuple(aliases)
+    return (name,)
+
+
+def ensure_unique_public_names(items: tuple[Any, ...], context: str) -> None:
+    seen: dict[str, str] = {}
+    for item in items:
+        owner = getattr(item, "name", "<unknown>")
+        for public_name in public_names_for_item(item):
+            prior = seen.get(public_name)
+            if prior is not None:
+                raise IrValidationError(
+                    f"duplicate generated public member {context}.{public_name} from {prior} and {owner}"
+                )
+            seen[public_name] = owner
 
 
 def load_ir(path: pathlib.Path | str) -> HostIr:

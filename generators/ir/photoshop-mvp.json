@@ -116,9 +116,9 @@
     {
       "name": "raw",
       "methods": [
-        {"name": "evalJs", "returns": "Any"},
-        {"name": "getPath", "returns": "Any"},
-        {"name": "callPath", "returns": "Any"}
+        {"name": "evalJs", "returns": "Any", "raw": true},
+        {"name": "getPath", "returns": "Any", "raw": true},
+        {"name": "callPath", "returns": "Any", "raw": true}
       ]
     }
   ],

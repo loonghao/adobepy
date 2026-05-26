@@ -8,7 +8,7 @@
       "properties": [{"name": "active_project", "type": "Project | None", "source": "project.getActive"}]
     },
     {"name": "project", "methods": [{"name": "getActive", "returns": "Project | None"}]},
-    {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any"}]}
+    {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any", "raw": true}]}
   ],
   "proxies": [
     {

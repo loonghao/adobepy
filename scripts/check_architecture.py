@@ -84,6 +84,64 @@ def public_class_members(path: pathlib.Path) -> Iterable[tuple[str, Set[str]]]:
         yield node.name, members
 
 
+def literal_string(node: ast.AST) -> Optional[str]:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    return None
+
+
+class RuntimeInvokeVisitor(ast.NodeVisitor):
+    def __init__(self) -> None:
+        self.current_class: Optional[str] = None
+        self.current_function: Optional[str] = None
+        self.direct_pairs: Set[tuple[str, str]] = set()
+        self.dynamic_helpers: List[tuple[str, str, str]] = []
+        self.helper_calls: List[tuple[str, str, str]] = []
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        previous = self.current_class
+        self.current_class = node.name
+        self.generic_visit(node)
+        self.current_class = previous
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        previous = self.current_function
+        self.current_function = node.name
+        self.generic_visit(node)
+        self.current_function = previous
+
+    def visit_Call(self, node: ast.Call) -> None:
+        attr = node.func.attr if isinstance(node.func, ast.Attribute) else None
+        if attr == "invoke" and len(node.args) >= 2:
+            namespace = literal_string(node.args[0])
+            method = literal_string(node.args[1])
+            if namespace and method:
+                self.direct_pairs.add((namespace, method))
+            elif namespace and isinstance(node.args[1], ast.Name) and self.current_class and self.current_function:
+                self.dynamic_helpers.append((self.current_class, self.current_function, namespace))
+
+        if attr and node.args and self.current_class:
+            method = literal_string(node.args[0])
+            if method:
+                self.helper_calls.append((self.current_class, attr, method))
+        self.generic_visit(node)
+
+
+def runtime_invoke_pairs_from_source(source: str, filename: str) -> Set[tuple[str, str]]:
+    visitor = RuntimeInvokeVisitor()
+    visitor.visit(ast.parse(source, filename=filename))
+    pairs = set(visitor.direct_pairs)
+    for class_name, helper_name, namespace in visitor.dynamic_helpers:
+        for call_class, call_name, method in visitor.helper_calls:
+            if call_class == class_name and call_name == helper_name:
+                pairs.add((namespace, method))
+    return pairs
+
+
+def runtime_invoke_pairs(path: pathlib.Path) -> Set[tuple[str, str]]:
+    return runtime_invoke_pairs_from_source(path.read_text(encoding="utf-8"), str(path))
+
+
 def host_packages(hosts: Iterable[str]) -> Dict[str, str]:
     return {host: snake_case(host) for host in hosts}
 
@@ -166,12 +224,42 @@ def check_bridge_core_boundaries(hosts: Dict[str, pathlib.Path]) -> List[str]:
     return [f"bridge core boundaries: {len(checked)} TypeScript files checked"]
 
 
+def ir_method_pairs(path: pathlib.Path) -> Set[tuple[str, str]]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    pairs: Set[tuple[str, str]] = set()
+    for namespace in payload.get("namespaces", []):
+        if not isinstance(namespace, dict) or not isinstance(namespace.get("name"), str):
+            continue
+        namespace_name = namespace["name"]
+        for method in namespace.get("methods", []):
+            if isinstance(method, dict) and isinstance(method.get("name"), str):
+                pairs.add((namespace_name, method["name"]))
+    return pairs
+
+
+def check_runtime_invokes_declared_in_ir(hosts: Dict[str, pathlib.Path]) -> List[str]:
+    messages: List[str] = []
+    failures: List[str] = []
+    for host, ir_path in hosts.items():
+        session_path = PYTHON_ROOT / snake_case(host) / "session.py"
+        declared = ir_method_pairs(ir_path)
+        invoked = runtime_invoke_pairs(session_path)
+        undeclared = sorted(invoked - declared)
+        if undeclared:
+            failures.append(f"{session_path.relative_to(ROOT)} invokes methods missing from IR: {undeclared}")
+        messages.append(f"{host}: {len(invoked)} runtime invoke pairs declared in IR")
+    if failures:
+        raise ArchitectureError("\n".join(failures))
+    return messages
+
+
 def check_architecture() -> List[str]:
     hosts = load_ir_hosts()
     messages: List[str] = []
     messages.extend(check_host_package_parity(hosts))
     messages.extend(check_python_import_boundaries(hosts))
     messages.extend(check_alias_pairs())
+    messages.extend(check_runtime_invokes_declared_in_ir(hosts))
     messages.extend(check_bridge_core_boundaries(hosts))
     return messages
 

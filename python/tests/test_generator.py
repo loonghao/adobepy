@@ -55,15 +55,23 @@ class GeneratorTests(unittest.TestCase):
         with self.assertRaisesRegex(IrValidationError, "invalid host"):
             HostIr.from_mapping({"host": "class", "version": "0.1.0", "namespaces": [{"name": "app"}]})
         with self.assertRaisesRegex(IrValidationError, "requiresModalWhenMutating"):
-            HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "action", "methods": [{"name": "x", "requiresModalWhenMutating": True}]}]})
+            HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "action", "methods": [{"name": "x", "returns": "Any", "requiresModalWhenMutating": True}]}]})
         with self.assertRaisesRegex(IrValidationError, "source must be namespace.method"):
-            HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "app", "methods": [{"name": "x"}], "properties": [{"name": "p", "type": "Document", "source": "x"}]}]})
+            HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "app", "methods": [{"name": "x", "returns": "Any"}], "properties": [{"name": "p", "type": "Document", "source": "x"}]}]})
         with self.assertRaisesRegex(IrValidationError, "does not reference"):
             HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "app", "properties": [{"name": "p", "type": "Document", "source": "app.x"}]}]})
         with self.assertRaisesRegex(IrValidationError, "invalid proxy name"):
             HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "app"}], "proxies": [{"name": "not-valid"}]})
         with self.assertRaisesRegex(IrValidationError, "duplicate photoshop: proxy DocumentProxy"):
             HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "app"}], "proxies": [{"name": "DocumentProxy"}, {"name": "DocumentProxy"}]})
+        with self.assertRaisesRegex(IrValidationError, "raw namespace method evalJs must set raw true"):
+            HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "raw", "methods": [{"name": "evalJs", "returns": "Any"}]}]})
+        with self.assertRaisesRegex(IrValidationError, "non-raw method app.getVersion must not set raw true"):
+            HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "app", "methods": [{"name": "getVersion", "returns": "str", "raw": True}]}]})
+        with self.assertRaisesRegex(IrValidationError, "must be snake_case"):
+            HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "app", "properties": [{"name": "activeDocument", "type": "Document", "source": "app.getVersion"}], "methods": [{"name": "getVersion", "returns": "str"}]}]})
+        with self.assertRaisesRegex(IrValidationError, "duplicate generated public member"):
+            HostIr.from_mapping({"host": "photoshop", "version": "0.1.0", "namespaces": [{"name": "action", "methods": [{"name": "batchPlay", "returns": "Any"}, {"name": "batch_play", "returns": "Any"}]}]})
         self.assertEqual(snake_case("batchPlay"), "batch_play")
         self.assertEqual(snake_case("after-effects"), "after_effects")
         self.assertEqual(pascal_case("indesign"), "InDesign")
