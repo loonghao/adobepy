@@ -14,6 +14,10 @@ or native `cp38-abi3-*` wheels. Native build backends should enable the
 equivalent of PyO3's `abi3-py38` feature so one wheel covers Python 3.8 and
 newer.
 
+PyPI publishing uses trusted publishing. The PyPI publisher entry must point to
+repository `loonghao/adobepy`, workflow `.github/workflows/release.yml`, and
+environment `pypi`.
+
 ```powershell
 vx just package
 ```
