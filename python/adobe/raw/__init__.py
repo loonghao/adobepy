@@ -22,11 +22,17 @@ class RawSession(HostSession):
     def eval_extendscript(self, source: str, *args: Any, timeout_ms: int | None = None) -> Any:
         return self.raw.eval_extendscript(source, *args, timeout_ms=timeout_ms)
 
+    def eval_extend_script(self, source: str, *args: Any, timeout_ms: int | None = None) -> Any:
+        return self.eval_extendscript(source, *args, timeout_ms=timeout_ms)
+
     def evalExtendScript(self, source: str, *args: Any, timeoutMs: int | None = None) -> Any:
-        return self.eval_extendscript(source, *args, timeout_ms=timeoutMs)
+        return self.eval_extend_script(source, *args, timeout_ms=timeoutMs)
 
     async def eval_extendscript_async(self, source: str, *args: Any, timeout_ms: int | None = None) -> Any:
         return await self.invoke_async("raw", "evalExtendScript", source, *args, options=_timeout_options(timeout_ms))
+
+    async def eval_extend_script_async(self, source: str, *args: Any, timeout_ms: int | None = None) -> Any:
+        return await self.eval_extendscript_async(source, *args, timeout_ms=timeout_ms)
 
     def send_sdk_message(self, message: dict[str, Any], timeout_ms: int | None = None) -> Any:
         return self.raw.send_sdk_message(message, timeout_ms=timeout_ms)
@@ -98,6 +104,16 @@ def eval_extendscript(
     return connect(host, **connect_kwargs).eval_extendscript(source, *args, timeout_ms=timeout_ms)
 
 
+def eval_extend_script(
+    host: str,
+    source: str,
+    *args: Any,
+    timeout_ms: int | None = None,
+    **connect_kwargs: Any,
+) -> Any:
+    return connect(host, **connect_kwargs).eval_extend_script(source, *args, timeout_ms=timeout_ms)
+
+
 def send_sdk_message(host: str, message: dict[str, Any], timeout_ms: int | None = None, **connect_kwargs: Any) -> Any:
     return connect(host, **connect_kwargs).send_sdk_message(message, timeout_ms=timeout_ms)
 
@@ -121,6 +137,7 @@ __all__ = [
     "batch_play",
     "connect",
     "connect_async",
+    "eval_extend_script",
     "eval_extendscript",
     "eval_js",
     "send_sdk_message",

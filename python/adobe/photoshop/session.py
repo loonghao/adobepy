@@ -113,6 +113,23 @@ class Photoshop(PhotoshopSession):
             timeout_ms=timeout_ms,
         )
 
+    def batch_play(
+        self,
+        descriptors: list[dict[str, Any]],
+        options: dict[str, Any] | None = None,
+        *,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> Any:
+        return self.action.batch_play(
+            descriptors,
+            options,
+            modal=modal,
+            command_name=command_name,
+            timeout_ms=timeout_ms,
+        )
+
     def executeAsModal(
         self,
         callback: Any | None = None,
@@ -126,6 +143,14 @@ class Photoshop(PhotoshopSession):
             return context
         with context:
             return callback()
+
+    def execute_as_modal(
+        self,
+        callback: Any | None = None,
+        *,
+        command_name: str | None = None,
+    ) -> Any:
+        return self.executeAsModal(callback, command_name=command_name)
 
 
 class PhotoshopApp:

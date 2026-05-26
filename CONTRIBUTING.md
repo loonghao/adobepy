@@ -9,6 +9,8 @@ audit.
 
 - Keep host-specific behavior behind host adapters. Broker, protocol, client,
   and capability code should not grow Photoshop-only assumptions.
+- Follow the ownership boundaries in `docs/architecture.md` when adding host
+  methods or new Adobe applications.
 - Prefer generated or schema-backed facade additions over hand-written drift.
   When hand-writing a method, add the IR and bridge capability update in the
   same change.
@@ -27,10 +29,17 @@ Run the narrowest useful gate while iterating, then the full gate before
 publishing:
 
 ```powershell
+npm run lint
 npm run test:quick
 npm run test:bridges
 npm run test:all
 vx just package
+```
+
+Architecture-specific checks:
+
+```powershell
+npm run architecture:check
 ```
 
 New code should include tests at the lowest stable layer:

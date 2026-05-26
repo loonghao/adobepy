@@ -18,9 +18,11 @@ replay:
 api-sources:
     npm run api:sources:validate
 
+architecture:
+    npm run architecture:check
+
 lint:
-    cargo fmt --check
-    cargo clippy --workspace --all-targets -- -D warnings
+    npm run lint
 
 build:
     cargo build --release -p adobepy-cli --bin adobepy

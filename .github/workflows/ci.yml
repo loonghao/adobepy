@@ -48,12 +48,31 @@ jobs:
       - run: npm ci
       - run: npm run test:bridges
 
+  quality:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: npm ci
+      - run: npm run lint
+
   package:
     name: Windows package smoke
     runs-on: windows-latest
     needs:
       - quick
       - bridges
+      - quality
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

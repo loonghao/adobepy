@@ -30,6 +30,21 @@ Full local gate. It runs the quick gate plus bridge protocol tests. It is the
 default acceptance command before publishing.
 
 ```powershell
+npm run lint
+```
+
+Quality gate. It runs Python syntax and architecture checks, TypeScript
+type-checking, Rust formatting, and Rust clippy.
+
+```powershell
+npm run architecture:check
+```
+
+Architecture gate. It checks shared/host import direction, host package parity,
+`py.typed` markers, bridge-core neutrality, and camelCase-to-snake_case facade
+alias pairs.
+
+```powershell
 npm run api:sources:validate
 ```
 
@@ -57,6 +72,10 @@ the manifest, creates the archive, and writes the SHA256 file.
   `.pyi` output before facade or bridge code relies on it.
 - API source tests: validate the Adobe reference registry used to expand API
   coverage and aliases.
+- Architecture tests: enforce shared/host ownership boundaries and alias parity
+  so the facade stays extensible as new Adobe APIs are added.
+- Lint/quality gates: compile Python 3.8-compatible sources, type-check bridge
+  TypeScript, and run Rust format/clippy checks in CI.
 - Python facade tests: assert JS-shaped aliases and Pythonic aliases call the
   same broker methods, including modal and timeout options.
 - Replay fixture tests: turn common Python examples into deterministic broker

@@ -70,6 +70,9 @@ class RawNamespace:
     def eval_extendscript(self, source: str, *args: Any, timeout_ms: int | None = None) -> Any:
         return self._session.invoke("raw", "evalExtendScript", source, *args, options=_timeout_options(timeout_ms))
 
+    def eval_extend_script(self, source: str, *args: Any, timeout_ms: int | None = None) -> Any:
+        return self.eval_extendscript(source, *args, timeout_ms=timeout_ms)
+
     def send_sdk_message(self, message: dict[str, Any], timeout_ms: int | None = None) -> Any:
         return self._session.invoke("raw", "sendSdkMessage", message, options=_timeout_options(timeout_ms))
 

@@ -63,6 +63,9 @@ class FacadeTests(unittest.TestCase):
         with app.executeAsModal(commandName="Hide"):
             app.action.batchPlay([{"_obj": "hide"}])
         self.assertEqual(client.calls[-1]["options"]["commandName"], "Hide")
+        with app.execute_as_modal(command_name="Tone"):
+            app.batch_play([{"_obj": "levels"}])
+        self.assertEqual(client.calls[-1]["options"]["commandName"], "Tone")
         app.activeDocument.saveAs("C:/x.psd", commandName="Save")
         app.activeDocument.export("C:/x.png", timeout_ms=3)
         app.activeLayer.hide()
@@ -102,6 +105,7 @@ class FacadeTests(unittest.TestCase):
         raw.eval_js("1", timeout_ms=1)
         raw.evalJs("1", timeoutMs=2)
         raw.eval_extendscript("1")
+        raw.eval_extend_script("1")
         raw.evalExtendScript("1", timeoutMs=3)
         raw.send_sdk_message({"x": 1})
         raw.sendSdkMessage({"x": 2}, timeoutMs=4)
@@ -116,6 +120,7 @@ class AsyncFacadeTests(unittest.IsolatedAsyncioTestCase):
         raw = RawSession("premiere", client)
         self.assertEqual(await raw.eval_js_async("1"), {"method": "evalJs"})
         self.assertEqual(await raw.eval_extendscript_async("1"), {"method": "evalExtendScript"})
+        self.assertEqual(await raw.eval_extend_script_async("1"), {"method": "evalExtendScript"})
         self.assertEqual(await raw.send_sdk_message_async({"x": 1}), {"method": "sendSdkMessage"})
         self.assertEqual(await raw.batch_play_async([{"_obj": "hide"}]), {"method": "batchPlay"})
 
