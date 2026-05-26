@@ -52,7 +52,7 @@ function Ensure-PythonBuildDependencies {
     $probe = "import importlib.metadata as m, importlib.util, sys; missing = [name for name in ('coverage', 'setuptools', 'wheel') if importlib.util.find_spec(name) is None]; ok = not missing and tuple(map(int, m.version('setuptools').split('.')[:2])) >= (77, 0); sys.exit(0 if ok else 1)"
     & python -c $probe 2>$null
     if ($LASTEXITCODE -ne 0) {
-        Invoke-External "python" @("-m", "pip", "install", "--upgrade", "coverage", "setuptools>=77", "wheel")
+        Invoke-External "python" @("-m", "pip", "install", "--upgrade", "coverage[toml]", "setuptools>=77", "wheel")
     }
 }
 
@@ -131,7 +131,7 @@ compiled UXP/CEP bridge templates, IR contracts, and operation docs.
 ```
 
 Adobe desktop applications, UXP Developer Tools, CEP host support, and Python
-3.9+ are host-machine prerequisites and are not redistributed here.
+3.8+ are host-machine prerequisites and are not redistributed here.
 "@ | Set-Content -LiteralPath $Destination -Encoding UTF8
 }
 
@@ -204,6 +204,7 @@ Invoke-Step "Stage distribution tree" {
 
 Invoke-Step "Build Python wheel" {
     Invoke-External "python" @("-m", "pip", "wheel", "--no-deps", "--no-build-isolation", "--wheel-dir", (Join-Path $stageRoot "wheels"), ".")
+    Invoke-External "python" @("scripts\check_wheel_compat.py", (Join-Path $stageRoot "wheels"))
     Remove-TransientBuildArtifacts $Root
 }
 

@@ -9,6 +9,11 @@ adds a native Python extension for the broker or protocol layer, that extension
 must be built with a stable CPython ABI floor of `abi3-py38` instead of
 per-minor-version wheels.
 
+The release workflow enforces that rule by accepting only `py3-none-any` wheels
+or native `cp38-abi3-*` wheels. Native build backends should enable the
+equivalent of PyO3's `abi3-py38` feature so one wheel covers Python 3.8 and
+newer.
+
 ```powershell
 vx just package
 ```
@@ -22,7 +27,8 @@ vx just package-quick
 The package script:
 
 - installs Node dependencies with `npm ci` if `node_modules` is missing;
-- ensures Python build/test helpers `coverage`, `setuptools`, and `wheel` exist;
+- ensures Python build/test helpers `coverage[toml]`, `setuptools`, and `wheel`
+  exist;
 - runs `npm run test:all` unless `-SkipTests` is passed;
 - builds `adobepy` with `cargo build --release -p adobepy-cli --bin adobepy`;
 - builds UXP and CEP bridge bundles;

@@ -30,6 +30,10 @@ The full test suite type-checks bridge code, builds and exercises UXP/CEP
 bundles with mocked host runtimes, validates IR contracts, checks Python
 coverage, and runs Rust workspace tests.
 
+Python support starts at 3.8. The current SDK wheel is pure Python; any future
+native Python extension must publish `cp38-abi3-*` wheels rather than
+per-minor-version wheels.
+
 Build a redistributable Windows package:
 
 ```powershell
