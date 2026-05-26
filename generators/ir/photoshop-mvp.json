@@ -9,8 +9,10 @@
         {"name": "getDocuments", "returns": "list[Document]"}
       ],
       "properties": [
+        {"name": "documents", "type": "list[Document]", "source": "app.getDocuments"},
         {"name": "active_document", "type": "Document | None", "source": "document.getActive"},
-        {"name": "active_layer", "type": "Layer | None", "source": "layer.getActive"}
+        {"name": "active_layer", "type": "Layer | None", "source": "layer.getActive"},
+        {"name": "active_layers", "type": "list[Layer]", "source": "document.getActiveLayers"}
       ]
     },
     {
@@ -38,6 +40,51 @@
         {"name": "evalJs", "returns": "Any"},
         {"name": "getPath", "returns": "Any"},
         {"name": "callPath", "returns": "Any"}
+      ]
+    }
+  ],
+  "proxies": [
+    {
+      "name": "DocumentProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "path", "type": "str | None"},
+        {"name": "width", "type": "Any"},
+        {"name": "height", "type": "Any"},
+        {"name": "resolution", "type": "Any"},
+        {"name": "saved", "type": "bool | None"},
+        {"name": "mode", "type": "str | None"},
+        {"name": "typename", "type": "str | None"},
+        {"name": "layers", "type": "list[Layer]"},
+        {"name": "active_layers", "type": "list[Layer]"},
+        {"name": "dom", "type": "PhotoshopDomProxy"}
+      ],
+      "methods": [
+        {"name": "refresh", "returns": "Document"},
+        {"name": "saveAs", "returns": "Any"},
+        {"name": "export", "returns": "Any"}
+      ]
+    },
+    {
+      "name": "LayerProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "kind", "type": "str | None"},
+        {"name": "opacity", "type": "Any"},
+        {"name": "visible", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"},
+        {"name": "has_children", "type": "bool"},
+        {"name": "layers", "type": "list[Layer]"}
+      ],
+      "methods": [{"name": "hide", "returns": "Any"}]
+    },
+    {
+      "name": "PhotoshopDomProxy",
+      "methods": [
+        {"name": "get", "returns": "Any"},
+        {"name": "call", "returns": "Any"}
       ]
     }
   ]

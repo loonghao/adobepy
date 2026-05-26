@@ -17,7 +17,7 @@ Implemented pieces:
 - Optional DCC MCP result helpers under `adobe.dcc_mcp` for adapter skill code.
 - UXP bridge templates for Photoshop, InDesign, and Premiere that dispatch to host APIs and broker raw JavaScript escape hatches.
 - CEP bridge templates for After Effects and Illustrator.
-- IR validation and `.pyi` stub generation.
+- IR validation, proxy-aware `.pyi` stub generation, and stub/runtime drift checks.
 - `vx just package` distribution workflow.
 
 Validate everything:

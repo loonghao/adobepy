@@ -439,6 +439,10 @@ class LayerProxy:
         return bool(self._payload.get("hasChildren"))
 
     @property
+    def hasChildren(self) -> bool:
+        return self.has_children
+
+    @property
     def layers(self) -> list["LayerProxy"]:
         payload = self._session.invoke("layer", "getChildren", self.id)
         return [LayerProxy(self._session, layer) for layer in payload or []]

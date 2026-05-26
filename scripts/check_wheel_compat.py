@@ -5,12 +5,30 @@ from __future__ import annotations
 import argparse
 import pathlib
 import sys
+import zipfile
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Sequence
 
 
 PURE_PYTHON_TAG = ("py3", "none", "any")
 ABI3_PY38_TAG = ("cp38", "abi3")
+REQUIRED_PACKAGE_FILES = frozenset(
+    {
+        "adobe/after_effects/py.typed",
+        "adobe/after_effects/session.pyi",
+        "adobe/core/py.typed",
+        "adobe/dcc_mcp/py.typed",
+        "adobe/illustrator/py.typed",
+        "adobe/illustrator/session.pyi",
+        "adobe/indesign/py.typed",
+        "adobe/indesign/session.pyi",
+        "adobe/photoshop/py.typed",
+        "adobe/photoshop/session.pyi",
+        "adobe/premiere/py.typed",
+        "adobe/premiere/session.pyi",
+        "adobe/raw/py.typed",
+    }
+)
 
 
 class WheelCompatibilityError(ValueError):
@@ -47,6 +65,14 @@ def assert_compatible_wheel_name(filename: str) -> None:
     )
 
 
+def assert_required_package_files(wheel: pathlib.Path) -> None:
+    with zipfile.ZipFile(wheel) as archive:
+        names = set(archive.namelist())
+    missing = sorted(REQUIRED_PACKAGE_FILES - names)
+    if missing:
+        raise WheelCompatibilityError(f"{wheel.name!r} is missing package typing files: {missing}")
+
+
 def iter_wheels(paths: Sequence[pathlib.Path]) -> Iterable[pathlib.Path]:
     for path in paths:
         if path.is_dir():
@@ -71,6 +97,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     for wheel in wheels:
         try:
             assert_compatible_wheel_name(wheel.name)
+            assert_required_package_files(wheel)
         except WheelCompatibilityError as exc:
             failures.append(str(exc))
 

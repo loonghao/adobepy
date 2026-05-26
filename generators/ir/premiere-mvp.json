@@ -9,5 +9,11 @@
     },
     {"name": "project", "methods": [{"name": "getActive", "returns": "Project | None"}]},
     {"name": "raw", "methods": [{"name": "evalJs", "returns": "Any"}]}
+  ],
+  "proxies": [
+    {
+      "name": "ProjectProxy",
+      "properties": [{"name": "name", "type": "str | None"}]
+    }
   ]
 }

@@ -1,0 +1,34 @@
+from __future__ import annotations
+
+from typing import Any
+from adobe.core import BrokerClient
+from adobe.core.session import HostSession
+
+class InDesignSession(HostSession):
+    def __init__(self, client: BrokerClient | None = ...) -> None: ...
+
+
+class InDesign(InDesignSession):
+    def __init__(self, *, broker_url: str | None = ..., token: str | None = ..., target: str = "default", timeout: float = ..., client: BrokerClient | None = ...) -> None: ...
+    @property
+    def version(self) -> str: ...
+    @property
+    def active_document(self) -> DocumentProxy | None: ...
+    @property
+    def activeDocument(self) -> DocumentProxy | None: ...
+
+
+class InDesignApp:
+    @property
+    def version(self) -> str: ...
+    @property
+    def active_document(self) -> DocumentProxy | None: ...
+    @property
+    def activeDocument(self) -> DocumentProxy | None: ...
+
+
+class DocumentProxy:
+    @property
+    def id(self) -> int | str | None: ...
+    @property
+    def name(self) -> str | None: ...

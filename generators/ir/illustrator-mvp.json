@@ -9,5 +9,16 @@
     },
     {"name": "document", "methods": [{"name": "getActive", "returns": "Document | None"}]},
     {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any"}]}
+  ],
+  "proxies": [
+    {
+      "name": "DocumentProxy",
+      "properties": [
+        {"name": "name", "type": "str | None"},
+        {"name": "path", "type": "str | None"},
+        {"name": "width", "type": "Any"},
+        {"name": "height", "type": "Any"}
+      ]
+    }
   ]
 }

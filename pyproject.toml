@@ -41,6 +41,9 @@ where = ["python"]
 exclude = ["tests", "tests.*"]
 namespaces = false
 
+[tool.setuptools.package-data]
+"*" = ["py.typed", "*.pyi"]
+
 [tool.coverage.run]
 branch = true
 source = ["python/adobe", "generators"]

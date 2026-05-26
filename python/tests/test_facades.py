@@ -57,6 +57,7 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(app.activeDocument.activeLayers[0].name, "Layer 1")
         self.assertEqual(app.activeLayers[0].name, "Layer 1")
         self.assertEqual(app.active_layer.name, "Layer 1")
+        self.assertFalse(app.active_layer.hasChildren)
         self.assertEqual(app.active_layer.layers[0].name, "Child")
         self.assertEqual(app.dom.app.activeDocument.get()["path"], ["app", "activeDocument"])
         self.assertEqual(app.dom.app.activeDocument.createLayer({"name": "x"}, modal=True)["path"], ["app", "activeDocument", "createLayer"])

@@ -9,5 +9,14 @@
     },
     {"name": "document", "methods": [{"name": "getActive", "returns": "Document | None"}]},
     {"name": "raw", "methods": [{"name": "evalJs", "returns": "Any"}]}
+  ],
+  "proxies": [
+    {
+      "name": "DocumentProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"}
+      ]
+    }
   ]
 }

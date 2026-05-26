@@ -53,6 +53,15 @@ WebSocket, captures the advertised `hello.capabilities` payload, and checks it
 against the host IR and API source registry.
 
 ```powershell
+npm run stubs:check
+```
+
+Generated facade stub gate. It checks committed `session.pyi` files against the
+IR generator and verifies every generated public class/member exists in the
+runtime facade implementation. Use `npm run stubs:write` after intentionally
+changing the IR facade surface.
+
+```powershell
 npm run api:sources:validate
 ```
 
@@ -91,6 +100,8 @@ the manifest, creates the archive, and writes the SHA256 file.
   so the facade stays extensible as new Adobe APIs are added.
 - Capability tests: keep bridge-advertised namespaces and methods in lockstep
   with the IR that drives Python facade and stub generation.
+- Stub drift tests: keep generated `.pyi` files, runtime facade classes, and
+  Pythonic alias names aligned as API coverage expands.
 - Lint/quality gates: compile Python 3.8-compatible sources, type-check bridge
   TypeScript, and run Rust format/clippy checks in CI.
 - Python facade tests: assert JS-shaped aliases and Pythonic aliases call the

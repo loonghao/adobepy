@@ -35,6 +35,9 @@ IR, bridge capabilities, Python facade, and Pythonic aliases.
   object families from planned full-coverage families.
 - MVP coverage targets must cite real IR namespaces and facade objects; planned
   targets must stay explicit so gaps remain visible until implemented.
+- IR files should describe proxy classes for runtime facade objects that expose
+  Adobe DOM payloads. Generated stubs are checked against those proxy contracts
+  and the handwritten runtime classes.
 - UXP hosts should prefer typed DOM APIs over raw script execution. Photoshop
   keeps `action.batchPlay` because Adobe documents it as the advanced escape
   hatch below the DOM model.
@@ -67,6 +70,18 @@ ensures every IR host is represented, verifies source URLs are HTTPS, and
 confirms the registry points at real local IR files. It also checks that
 coverage targets reference known documentation names, GitHub tracking issues,
 and existing IR namespaces when a target is marked as MVP.
+
+Check generated facade stubs and runtime member parity:
+
+```powershell
+npm run stubs:check
+```
+
+After intentionally changing an IR facade/proxy surface, regenerate stubs:
+
+```powershell
+npm run stubs:write
+```
 
 Generate the current coverage matrix:
 

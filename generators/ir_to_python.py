@@ -55,6 +55,50 @@ class PropertyIr:
 
 
 @dataclass(frozen=True)
+class FacadePropertyIr:
+    name: str
+    type: str
+
+    @classmethod
+    def from_mapping(cls, payload: dict[str, Any]) -> "FacadePropertyIr":
+        return cls(
+            name=required_string(payload, "name"),
+            type=required_string(payload, "type"),
+        )
+
+
+@dataclass(frozen=True)
+class FacadeMethodIr:
+    name: str
+    returns: str = "Any"
+
+    @classmethod
+    def from_mapping(cls, payload: dict[str, Any]) -> "FacadeMethodIr":
+        return cls(
+            name=required_string(payload, "name"),
+            returns=str(payload.get("returns", "Any")),
+        )
+
+
+@dataclass(frozen=True)
+class ProxyIr:
+    name: str
+    properties: tuple[FacadePropertyIr, ...] = ()
+    methods: tuple[FacadeMethodIr, ...] = ()
+
+    @classmethod
+    def from_mapping(cls, payload: dict[str, Any]) -> "ProxyIr":
+        name = required_string(payload, "name")
+        if not name.isidentifier() or keyword.iskeyword(name):
+            raise IrValidationError(f"invalid proxy name: {name}")
+        properties = tuple(FacadePropertyIr.from_mapping(item) for item in payload.get("properties", ()))
+        methods = tuple(FacadeMethodIr.from_mapping(item) for item in payload.get("methods", ()))
+        ensure_unique_names(properties, f"proxy {name}: property")
+        ensure_unique_names(methods, f"proxy {name}: method")
+        return cls(name=name, properties=properties, methods=methods)
+
+
+@dataclass(frozen=True)
 class NamespaceIr:
     name: str
     methods: tuple[MethodIr, ...] = ()
@@ -65,11 +109,8 @@ class NamespaceIr:
         name = required_string(payload, "name")
         methods = tuple(MethodIr.from_mapping(item) for item in payload.get("methods", ()))
         properties = tuple(PropertyIr.from_mapping(item) for item in payload.get("properties", ()))
-        seen: set[str] = set()
-        for method in methods:
-            if method.name in seen:
-                raise IrValidationError(f"duplicate {name}: method {method.name}")
-            seen.add(method.name)
+        ensure_unique_names(methods, f"{name}: method")
+        ensure_unique_names(properties, f"{name}: property")
         return cls(name=name, methods=methods, properties=properties)
 
 
@@ -78,6 +119,7 @@ class HostIr:
     host: str
     version: str
     namespaces: tuple[NamespaceIr, ...] = field(default_factory=tuple)
+    proxies: tuple[ProxyIr, ...] = field(default_factory=tuple)
 
     @classmethod
     def from_mapping(cls, payload: dict[str, Any]) -> "HostIr":
@@ -86,24 +128,21 @@ class HostIr:
         if not IDENTIFIER_RE.match(host) or keyword.iskeyword(host):
             raise IrValidationError(f"invalid host: {host}")
         namespaces = tuple(NamespaceIr.from_mapping(item) for item in payload.get("namespaces", ()))
+        proxies = tuple(ProxyIr.from_mapping(item) for item in payload.get("proxies", ()))
         if not namespaces:
             raise IrValidationError("IR must define at least one namespace")
+        ensure_unique_names(namespaces, f"{host}: namespace")
+        ensure_unique_names(proxies, f"{host}: proxy")
 
         method_index = {(namespace.name, method.name) for namespace in namespaces for method in namespace.methods}
         for namespace in namespaces:
-            seen: set[str] = set()
-            for method in namespace.methods:
-                key = f"{host}.{namespace.name}: method {method.name}"
-                if key in seen:
-                    raise IrValidationError(f"duplicate {key}")
-                seen.add(key)
             for prop in namespace.properties:
                 parts = prop.source.split(".")
                 if len(parts) != 2:
                     raise IrValidationError(f"property {prop.name} source must be namespace.method")
                 if (parts[0], parts[1]) not in method_index:
                     raise IrValidationError(f"property {prop.name} does not reference a declared method")
-        return cls(host=host, version=version, namespaces=namespaces)
+        return cls(host=host, version=version, namespaces=namespaces, proxies=proxies)
 
     def namespace(self, name: str) -> NamespaceIr | None:
         return next((namespace for namespace in self.namespaces if namespace.name == name), None)
@@ -120,6 +159,15 @@ def required_string(payload: dict[str, Any], name: str) -> str:
     if not isinstance(value, str) or not value:
         raise IrValidationError(f"required string field is missing: {name}")
     return value
+
+
+def ensure_unique_names(items: tuple[Any, ...], context: str) -> None:
+    seen: set[str] = set()
+    for item in items:
+        name = getattr(item, "name", None)
+        if name in seen:
+            raise IrValidationError(f"duplicate {context} {name}")
+        seen.add(name)
 
 
 def load_ir(path: pathlib.Path | str) -> HostIr:
@@ -167,8 +215,31 @@ def render_property(name: str, type_name: str, indent: str = "    ") -> list[str
     return [f"{indent}@property", f"{indent}def {name}(self) -> {py_type(type_name)}: ..."]
 
 
+def render_property_with_aliases(name: str, type_name: str, indent: str = "    ") -> list[str]:
+    lines = render_property(name, type_name, indent=indent)
+    camel = camel_case(name)
+    if camel != name:
+        lines.extend(render_property(camel, type_name, indent=indent))
+    return lines
+
+
+def render_method_with_aliases(name: str, returns: str = "Any", indent: str = "    ") -> list[str]:
+    method_name = snake_case(name)
+    lines = [f"{indent}def {method_name}(self, *args: Any, **kwargs: Any) -> {py_type(returns)}: ..."]
+    if method_name != name:
+        lines.append(f"{indent}def {name}(self, *args: Any, **kwargs: Any) -> {py_type(returns)}: ...")
+    return lines
+
+
 def app_has_get_version(app: NamespaceIr) -> bool:
     return any(method.name == "getVersion" for method in app.methods)
+
+
+def app_method_return(app: NamespaceIr | None, method_name: str) -> str | None:
+    if app is None:
+        return None
+    method = next((item for item in app.methods if item.name == method_name), None)
+    return method.returns if method else None
 
 
 def render_pyi(contract: HostIr) -> str:
@@ -192,32 +263,41 @@ def render_pyi(contract: HostIr) -> str:
     app = contract.namespace("app")
     if app and app_has_get_version(app):
         lines.extend(["    @property", "    def version(self) -> str: ..."])
+    app_property_names = {prop.name for prop in app.properties} if app else set()
+    documents_type = app_method_return(app, "getDocuments")
+    if documents_type and "documents" not in app_property_names:
+        lines.extend(render_property("documents", documents_type, indent="    "))
     if app:
         for prop in app.properties:
-            lines.extend(render_property(prop.name, prop.type, indent="    "))
-            camel = camel_case(prop.name)
-            if camel != prop.name:
-                lines.extend(render_property(camel, prop.type, indent="    "))
+            lines.extend(render_property_with_aliases(prop.name, prop.type, indent="    "))
     if contract.method("action", "batchPlay"):
+        lines.append("    def batch_play(self, descriptors: list[dict[str, Any]], options: dict[str, Any] | None = ..., **kwargs: Any) -> Any: ...")
         lines.append("    def batchPlay(self, descriptors: list[dict[str, Any]], options: dict[str, Any] | None = ..., **kwargs: Any) -> Any: ...")
 
-    proxy_names: set[str] = set()
-    for namespace in contract.namespaces:
-        lines.extend(["", "", f"class {class_name}{pascal_case(namespace.name)}:"])
-        if not namespace.methods and not namespace.properties:
-            lines.append("    pass")
-        for method in namespace.methods:
-            method_name = snake_case(method.name)
-            lines.append(f"    def {method_name}(self, *args: Any, **kwargs: Any) -> {py_type(method.returns)}: ...")
-            if method_name != method.name:
-                lines.append(f"    def {method.name}(self, *args: Any, **kwargs: Any) -> {py_type(method.returns)}: ...")
-        for prop in namespace.properties:
-            proxy_match = re.match(r"([A-Za-z]+)Proxy", py_type(prop.type))
-            if proxy_match:
-                proxy_names.add(proxy_match.group(0))
+    lines.extend(["", "", f"class {class_name}App:"])
+    if app and app_has_get_version(app):
+        lines.extend(["    @property", "    def version(self) -> str: ..."])
+    if documents_type and "documents" not in app_property_names:
+        lines.extend(render_property("documents", documents_type, indent="    "))
+    if app:
+        for prop in app.properties:
+            lines.extend(render_property_with_aliases(prop.name, prop.type, indent="    "))
 
-    for proxy in sorted(proxy_names | {"DocumentProxy", "LayerProxy", "ProjectProxy"}):
-        lines.extend(["", "", f"class {proxy}:", "    pass"])
+    action = contract.namespace("action")
+    if action:
+        lines.extend(["", "", f"class {class_name}Action:"])
+        for method in action.methods:
+            lines.extend(render_method_with_aliases(method.name, method.returns, indent="    "))
+
+    for proxy in contract.proxies:
+        lines.extend(["", "", f"class {proxy.name}:"])
+        if not proxy.properties and not proxy.methods:
+            lines.append("    pass")
+            continue
+        for prop in proxy.properties:
+            lines.extend(render_property_with_aliases(prop.name, prop.type, indent="    "))
+        for method in proxy.methods:
+            lines.extend(render_method_with_aliases(method.name, method.returns, indent="    "))
     return "\n".join(lines) + "\n"
 
 
