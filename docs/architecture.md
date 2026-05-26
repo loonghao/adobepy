@@ -4,6 +4,9 @@
 the protocol and host adapters without copying transport code or leaking
 Photoshop-specific assumptions into shared modules.
 
+The stable adapter-facing wire contract is documented in
+[`docs/protocol.md`](protocol.md) and checked with `npm run protocol:check`.
+
 ## Ownership
 
 | Area | Owns | Must not own |

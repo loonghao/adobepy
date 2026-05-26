@@ -1,16 +1,12 @@
+import type { Capabilities, RpcRequest } from "./protocol";
+import { ERROR_CODES } from "./protocol";
+
 export interface CepConfig {
   host: string;
   brokerUrl: string;
   token: string;
   target: string;
-  capabilities: {
-    host: string;
-    bridgeKind: "cep";
-    bridgeVersion: string;
-    namespaces: string[];
-    features: string[];
-    methods: Record<string, string[]>;
-  };
+  capabilities: Capabilities;
 }
 
 declare const WebSocket: any;
@@ -26,7 +22,7 @@ export function startCepBridge(config: CepConfig): void {
   socket.addEventListener("message", (event: { data: string }) => {
     const message = JSON.parse(event.data);
     if (message.type !== "request") return;
-    const request = message.request;
+    const request = message.request as RpcRequest;
     const encoded = encodeURIComponent(JSON.stringify(request)).replace(/'/g, "%27");
     try {
       cs.evalScript(`adobepyDispatch(decodeURIComponent('${encoded}'))`, (raw: string) => {
@@ -49,5 +45,5 @@ export function startCepBridge(config: CepConfig): void {
 }
 
 function hostScriptError(id: string | number, error: any) {
-  return { jsonrpc: "2.0", id, error: { code: -32004, message: error?.message || String(error) } };
+  return { jsonrpc: "2.0", id, error: { code: ERROR_CODES.ERROR_HOST_SCRIPT, message: error?.message || String(error) } };
 }

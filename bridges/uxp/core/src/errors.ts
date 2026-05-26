@@ -1,5 +1,7 @@
-export const ERROR_METHOD_NOT_FOUND = -32601;
-export const ERROR_HOST_SCRIPT = -32004;
+import { ERROR_CODES } from "./protocol";
+
+export const ERROR_METHOD_NOT_FOUND = ERROR_CODES.ERROR_METHOD_NOT_FOUND;
+export const ERROR_HOST_SCRIPT = ERROR_CODES.ERROR_HOST_SCRIPT;
 
 export class BridgeRpcError extends Error {
   readonly code: number;

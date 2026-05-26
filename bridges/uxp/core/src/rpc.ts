@@ -1,5 +1,5 @@
 import type { HostAdapter } from "./host-adapter";
-import type { RpcRequest } from "./protocol";
+import type { BridgeRequest, RpcRequest } from "./protocol";
 import { BridgeRpcError, ERROR_HOST_SCRIPT } from "./errors";
 
 declare const WebSocket: any;
@@ -13,7 +13,7 @@ export function connectBridge(adapter: HostAdapter): void {
     socket.send(JSON.stringify({ type: "hello", token, target, capabilities: adapter.capabilities() }));
   });
   socket.addEventListener("message", async (event: { data: string }) => {
-    const message = JSON.parse(event.data);
+    const message = JSON.parse(event.data) as BridgeRequest;
     if (message.type !== "request") return;
     const request = message.request as RpcRequest;
     try {

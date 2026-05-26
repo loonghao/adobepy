@@ -7,9 +7,25 @@
     throw Error('Dynamic require of "' + x + '" is not supported');
   });
 
+  // bridges/uxp/core/src/protocol.ts
+  var ERROR_CODES = Object.freeze({
+    ERROR_PARSE: -32700,
+    ERROR_INVALID_REQUEST: -32600,
+    ERROR_METHOD_NOT_FOUND: -32601,
+    ERROR_HOST_NOT_RUNNING: -32001,
+    ERROR_BRIDGE_NOT_INSTALLED: -32002,
+    ERROR_CAPABILITY: -32003,
+    ERROR_HOST_SCRIPT: -32004,
+    ERROR_PERMISSION: -32005,
+    ERROR_MODAL_REQUIRED: -32006,
+    ERROR_TIMEOUT: -32007,
+    ERROR_SERIALIZATION: -32008,
+    ERROR_UNAUTHORIZED: -32009
+  });
+
   // bridges/uxp/core/src/errors.ts
-  var ERROR_METHOD_NOT_FOUND = -32601;
-  var ERROR_HOST_SCRIPT = -32004;
+  var ERROR_METHOD_NOT_FOUND = ERROR_CODES.ERROR_METHOD_NOT_FOUND;
+  var ERROR_HOST_SCRIPT = ERROR_CODES.ERROR_HOST_SCRIPT;
   var BridgeRpcError = class extends Error {
     constructor(code, message, data) {
       super(message);

@@ -1,5 +1,21 @@
 "use strict";
 (() => {
+  // bridges/cep/core/src/protocol.ts
+  var ERROR_CODES = Object.freeze({
+    ERROR_PARSE: -32700,
+    ERROR_INVALID_REQUEST: -32600,
+    ERROR_METHOD_NOT_FOUND: -32601,
+    ERROR_HOST_NOT_RUNNING: -32001,
+    ERROR_BRIDGE_NOT_INSTALLED: -32002,
+    ERROR_CAPABILITY: -32003,
+    ERROR_HOST_SCRIPT: -32004,
+    ERROR_PERMISSION: -32005,
+    ERROR_MODAL_REQUIRED: -32006,
+    ERROR_TIMEOUT: -32007,
+    ERROR_SERIALIZATION: -32008,
+    ERROR_UNAUTHORIZED: -32009
+  });
+
   // bridges/cep/core/src/rpc.ts
   function startCepBridge(config) {
     const socket = new WebSocket(config.brokerUrl);
@@ -34,7 +50,7 @@
     });
   }
   function hostScriptError(id, error) {
-    return { jsonrpc: "2.0", id, error: { code: -32004, message: (error == null ? void 0 : error.message) || String(error) } };
+    return { jsonrpc: "2.0", id, error: { code: ERROR_CODES.ERROR_HOST_SCRIPT, message: (error == null ? void 0 : error.message) || String(error) } };
   }
 
   // bridges/cep/after-effects/src/main.ts

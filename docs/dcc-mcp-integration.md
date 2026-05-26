@@ -4,6 +4,11 @@
 continues to own MCP server startup, skill discovery, and tool naming; adobepy
 owns broker sessions, capability checks, and Adobe host RPC.
 
+The JSON-RPC envelope, capability hello payload, auth behavior, target routing,
+timeouts, and error codes are part of the stable
+[`adobepy` host protocol](protocol.md). DCC MCP adapters should call that
+contract through Python facades, not through bridge-private WebSocket messages.
+
 ## Ownership Model
 
 | Component | Owns | Does not own |

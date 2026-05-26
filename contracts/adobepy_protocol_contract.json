@@ -1,0 +1,42 @@
+{
+  "jsonrpcVersion": "2.0",
+  "defaultTarget": "default",
+  "errorCodes": {
+    "ERROR_PARSE": -32700,
+    "ERROR_INVALID_REQUEST": -32600,
+    "ERROR_METHOD_NOT_FOUND": -32601,
+    "ERROR_HOST_NOT_RUNNING": -32001,
+    "ERROR_BRIDGE_NOT_INSTALLED": -32002,
+    "ERROR_CAPABILITY": -32003,
+    "ERROR_HOST_SCRIPT": -32004,
+    "ERROR_PERMISSION": -32005,
+    "ERROR_MODAL_REQUIRED": -32006,
+    "ERROR_TIMEOUT": -32007,
+    "ERROR_SERIALIZATION": -32008,
+    "ERROR_UNAUTHORIZED": -32009
+  },
+  "wireTypes": {
+    "RpcOptions": ["modal", "commandName", "timeoutMs", "traceId"],
+    "RpcRequest": ["jsonrpc", "id", "host", "target", "namespace", "method", "args", "options"],
+    "RpcResponse": ["jsonrpc", "id", "result", "diagnostics"],
+    "RpcErrorObject": ["code", "message", "data"],
+    "RpcErrorResponse": ["jsonrpc", "id", "error", "diagnostics"],
+    "Diagnostics": ["hostVersion", "bridge", "durationMs", "traceId"],
+    "Capabilities": ["host", "bridgeKind", "bridgeVersion", "hostVersion", "namespaces", "features", "methods"],
+    "BridgeSessionInfo": ["target", "capabilities", "connectedAtEpochMs"]
+  },
+  "bridgeInboundTypes": ["hello", "response", "error"],
+  "bridgeOutboundTypes": ["request"],
+  "pythonErrorClasses": {
+    "ERROR_HOST_NOT_RUNNING": "HostNotRunningError",
+    "ERROR_BRIDGE_NOT_INSTALLED": "BridgeNotInstalledError",
+    "ERROR_CAPABILITY": "CapabilityError",
+    "ERROR_HOST_SCRIPT": "HostScriptError",
+    "ERROR_PERMISSION": "PermissionError",
+    "ERROR_MODAL_REQUIRED": "ModalRequiredError",
+    "ERROR_TIMEOUT": "TimeoutError",
+    "ERROR_SERIALIZATION": "SerializationError",
+    "ERROR_UNAUTHORIZED": "UnauthorizedError",
+    "ERROR_METHOD_NOT_FOUND": "MethodNotFoundError"
+  }
+}

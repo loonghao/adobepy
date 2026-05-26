@@ -7,7 +7,7 @@ import urllib.request
 from unittest import mock
 
 from adobe.core import BrokerClient, BrokerConnectionError, HostSession, UnauthorizedError, connect
-from adobe.core.errors import CapabilityError, HostScriptError, error_from_rpc
+from adobe.core.errors import BridgeNotInstalledError, CapabilityError, HostScriptError, MethodNotFoundError, error_from_rpc
 
 
 class FakeResponse:
@@ -66,17 +66,41 @@ class CoreTests(unittest.TestCase):
         def fake_urlopen(request, timeout=None):
             captured["url"] = request.full_url
             captured["payload"] = json.loads(request.data.decode())
+            captured["headers"] = dict(request.header_items())
+            captured["timeout"] = timeout
             return FakeResponse({"jsonrpc": "2.0", "id": captured["payload"]["id"], "result": 42})
 
         with mock.patch.object(urllib.request, "urlopen", fake_urlopen):
-            result = BrokerClient("http://broker.test/", token="secret").call("photoshop", "app", "getVersion")
+            result = BrokerClient("http://broker.test/", token="secret", target="retouch", timeout=7).call(
+                "photoshop",
+                "app",
+                "getVersion",
+                options={"timeoutMs": 5000, "traceId": "t1"},
+                target="hero-doc",
+            )
 
         self.assertEqual(result, 42)
         self.assertEqual(captured["url"], "http://broker.test/v1/rpc")
+        self.assertEqual(captured["headers"]["X-adobepy-token"], "secret")
+        self.assertEqual(captured["timeout"], 7)
         self.assertEqual(captured["payload"]["host"], "photoshop")
+        self.assertEqual(captured["payload"]["target"], "hero-doc")
+        self.assertEqual(captured["payload"]["options"], {"timeoutMs": 5000, "traceId": "t1"})
 
         with mock.patch.object(urllib.request, "urlopen", return_value=FakeResponse({"error": {"code": -32009, "message": "bad"}})):
             with self.assertRaises(UnauthorizedError):
+                BrokerClient("http://broker.test").call("photoshop", "app", "getVersion")
+
+        with mock.patch.object(urllib.request, "urlopen", return_value=FakeResponse({"error": {"code": -32601, "message": "missing"}})):
+            with self.assertRaises(MethodNotFoundError):
+                BrokerClient("http://broker.test").call("photoshop", "app", "missing")
+
+        with mock.patch.object(
+            urllib.request,
+            "urlopen",
+            return_value=FakeResponse({"error": {"code": -32002, "message": "bridge disconnected before response"}}),
+        ):
+            with self.assertRaises(BridgeNotInstalledError):
                 BrokerClient("http://broker.test").call("photoshop", "app", "getVersion")
 
     def test_broker_client_connection_errors_and_headers(self):
