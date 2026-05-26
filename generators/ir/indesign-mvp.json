@@ -8,7 +8,8 @@
       "properties": [
         {"name": "active_document", "type": "Document | None", "source": "document.getActive"},
         {"name": "active_page", "type": "Page | None", "source": "page.getActive"},
-        {"name": "active_spread", "type": "Spread | None", "source": "spread.getActive"}
+        {"name": "active_spread", "type": "Spread | None", "source": "spread.getActive"},
+        {"name": "selected_text", "type": "TextSelection | None", "source": "text.getSelectedText"}
       ]
     },
     {"name": "document", "methods": [{"name": "getActive", "returns": "Document | None"}]},
@@ -29,6 +30,35 @@
         {"name": "getByName", "returns": "Spread | None"}
       ]
     },
+    {
+      "name": "text",
+      "methods": [
+        {"name": "getTextFrames", "returns": "list[TextFrame]"},
+        {"name": "getTextFrameByName", "returns": "TextFrame | None"},
+        {"name": "getSelectedText", "returns": "TextSelection | None"},
+        {"name": "setFrameContents", "returns": "TextFrame", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "story",
+      "methods": [
+        {"name": "getStories", "returns": "list[Story]"},
+        {"name": "getByName", "returns": "Story | None"},
+        {"name": "getByTextFrameId", "returns": "Story | None"},
+        {"name": "setContents", "returns": "Story", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "style",
+      "methods": [
+        {"name": "getParagraphStyles", "returns": "list[ParagraphStyle]"},
+        {"name": "getCharacterStyles", "returns": "list[CharacterStyle]"},
+        {"name": "getParagraphStyleByName", "returns": "ParagraphStyle | None"},
+        {"name": "getCharacterStyleByName", "returns": "CharacterStyle | None"},
+        {"name": "setParagraphStyleProperties", "returns": "ParagraphStyle", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setCharacterStyleProperties", "returns": "CharacterStyle", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
     {"name": "raw", "methods": [{"name": "evalJs", "returns": "Any"}]}
   ],
   "proxies": [
@@ -45,13 +75,100 @@
         {"name": "typename", "type": "str | None"},
         {"name": "pages", "type": "list[Page]"},
         {"name": "spreads", "type": "list[Spread]"},
+        {"name": "text_frames", "type": "list[TextFrame]"},
+        {"name": "stories", "type": "list[Story]"},
+        {"name": "paragraph_styles", "type": "list[ParagraphStyle]"},
+        {"name": "character_styles", "type": "list[CharacterStyle]"},
         {"name": "active_page", "type": "Page | None"},
         {"name": "active_spread", "type": "Spread | None"}
       ],
       "methods": [
         {"name": "getPage", "returns": "Page | None"},
-        {"name": "getSpread", "returns": "Spread | None"}
+        {"name": "getSpread", "returns": "Spread | None"},
+        {"name": "getTextFrame", "returns": "TextFrame | None"},
+        {"name": "getStory", "returns": "Story | None"},
+        {"name": "getParagraphStyle", "returns": "ParagraphStyle | None"},
+        {"name": "getCharacterStyle", "returns": "CharacterStyle | None"}
       ]
+    },
+    {
+      "name": "TextSelectionProxy",
+      "properties": [
+        {"name": "contents", "type": "str | None"},
+        {"name": "parent_story_id", "type": "int | str | None"},
+        {"name": "parent_story_name", "type": "str | None"},
+        {"name": "index", "type": "Any"},
+        {"name": "length", "type": "Any"},
+        {"name": "is_valid", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "TextFrameProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "index", "type": "Any"},
+        {"name": "contents", "type": "str | None"},
+        {"name": "overflows", "type": "bool | None"},
+        {"name": "geometric_bounds", "type": "list[Any]"},
+        {"name": "parent_story_id", "type": "int | str | None"},
+        {"name": "parent_story_name", "type": "str | None"},
+        {"name": "parent_page_id", "type": "int | str | None"},
+        {"name": "parent_page_name", "type": "str | None"},
+        {"name": "is_valid", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"},
+        {"name": "story", "type": "Story | None"}
+      ],
+      "methods": [{"name": "setContents", "returns": "TextFrame"}]
+    },
+    {
+      "name": "StoryProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "index", "type": "Any"},
+        {"name": "contents", "type": "str | None"},
+        {"name": "length", "type": "Any"},
+        {"name": "text_container_count", "type": "int"},
+        {"name": "paragraph_count", "type": "int"},
+        {"name": "is_valid", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ],
+      "methods": [{"name": "setContents", "returns": "Story"}]
+    },
+    {
+      "name": "ParagraphStyleProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "index", "type": "Any"},
+        {"name": "is_valid", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"},
+        {"name": "applied_font", "type": "Any"},
+        {"name": "font_style", "type": "Any"},
+        {"name": "point_size", "type": "Any"},
+        {"name": "leading", "type": "Any"},
+        {"name": "tracking", "type": "Any"},
+        {"name": "justification", "type": "Any"}
+      ],
+      "methods": [{"name": "update", "returns": "ParagraphStyle"}]
+    },
+    {
+      "name": "CharacterStyleProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "index", "type": "Any"},
+        {"name": "is_valid", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"},
+        {"name": "applied_font", "type": "Any"},
+        {"name": "font_style", "type": "Any"},
+        {"name": "point_size", "type": "Any"},
+        {"name": "leading", "type": "Any"},
+        {"name": "tracking", "type": "Any"}
+      ],
+      "methods": [{"name": "update", "returns": "CharacterStyle"}]
     },
     {
       "name": "PageProxy",

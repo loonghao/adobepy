@@ -155,11 +155,11 @@
         },
         {
           "name": "Text frames, stories, and styles",
-          "level": "planned",
+          "level": "mvp",
           "trackedBy": 7,
           "docRefs": ["InDesign DOM reference"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "irNamespaces": ["text", "story", "style"],
+          "facadeObjects": ["TextFrameProxy", "StoryProxy", "TextSelectionProxy", "ParagraphStyleProxy", "CharacterStyleProxy"]
         },
         {
           "name": "Swatches, colors, links, and export/package workflows",

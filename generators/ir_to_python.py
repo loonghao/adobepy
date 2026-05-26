@@ -208,7 +208,11 @@ def camel_case(value: str) -> str:
 
 
 def py_type(value: str) -> str:
-    return re.sub(r"\b(Channel|Document|Layer|Page|Project|Selection|Spread|TextItem)\b", r"\1Proxy", value)
+    return re.sub(
+        r"\b(Channel|CharacterStyle|Document|Layer|Page|ParagraphStyle|Project|Selection|Spread|Story|TextFrame|TextItem|TextSelection)\b",
+        r"\1Proxy",
+        value,
+    )
 
 
 def render_property(name: str, type_name: str, indent: str = "    ") -> list[str]:

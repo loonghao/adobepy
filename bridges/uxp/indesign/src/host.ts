@@ -3,6 +3,8 @@ import type { HostAdapter } from "../../core/src/host-adapter";
 import type { RpcRequest } from "../../core/src/protocol";
 import { asArray, asNumber, asString, evalJavaScript, isObject, maybePromise, optionalRequire, property } from "../../core/src/runtime";
 
+type Callable = (...args: unknown[]) => unknown;
+
 export const indesignAdapter: HostAdapter = {
   capabilities() {
     return {
@@ -10,13 +12,23 @@ export const indesignAdapter: HostAdapter = {
       bridgeKind: "uxp",
       bridgeVersion: "0.1.0",
       hostVersion: indesignVersion(),
-      namespaces: ["app", "document", "page", "spread", "raw"],
+      namespaces: ["app", "document", "page", "spread", "text", "story", "style", "raw"],
       features: ["dom"],
       methods: {
         app: ["getVersion"],
         document: ["getActive"],
         page: ["getPages", "getActive", "getByName", "select"],
         spread: ["getSpreads", "getActive", "getByName"],
+        text: ["getTextFrames", "getTextFrameByName", "getSelectedText", "setFrameContents"],
+        story: ["getStories", "getByName", "getByTextFrameId", "setContents"],
+        style: [
+          "getParagraphStyles",
+          "getCharacterStyles",
+          "getParagraphStyleByName",
+          "getCharacterStyleByName",
+          "setParagraphStyleProperties",
+          "setCharacterStyleProperties"
+        ],
         raw: ["evalJs"]
       }
     };
@@ -31,6 +43,24 @@ export const indesignAdapter: HostAdapter = {
     if (request.namespace === "spread" && request.method === "getSpreads") return documentSpreads(request);
     if (request.namespace === "spread" && request.method === "getActive") return serializeSpread(activeSpread(request.args?.[0]));
     if (request.namespace === "spread" && request.method === "getByName") return serializeSpread(findSpread(request.args?.[0], request.args?.[1]));
+    if (request.namespace === "text" && request.method === "getTextFrames") return documentTextFrames(request);
+    if (request.namespace === "text" && request.method === "getTextFrameByName") return serializeTextFrame(findTextFrame(request.args?.[0], request.args?.[1]));
+    if (request.namespace === "text" && request.method === "getSelectedText") return serializeTextSelection(selectedText());
+    if (request.namespace === "text" && request.method === "setFrameContents") return textFrameSetContents(request);
+    if (request.namespace === "story" && request.method === "getStories") return documentStories(request);
+    if (request.namespace === "story" && request.method === "getByName") return serializeStory(findStory(request.args?.[0], request.args?.[1]));
+    if (request.namespace === "story" && request.method === "getByTextFrameId") return serializeStory(storyForTextFrame(request.args?.[0], request.args?.[1]));
+    if (request.namespace === "story" && request.method === "setContents") return storySetContents(request);
+    if (request.namespace === "style" && request.method === "getParagraphStyles") return documentStyles(request, "paragraphStyles", serializeParagraphStyle);
+    if (request.namespace === "style" && request.method === "getCharacterStyles") return documentStyles(request, "characterStyles", serializeCharacterStyle);
+    if (request.namespace === "style" && request.method === "getParagraphStyleByName") return serializeParagraphStyle(findStyle(request.args?.[0], "paragraphStyles", request.args?.[1]));
+    if (request.namespace === "style" && request.method === "getCharacterStyleByName") return serializeCharacterStyle(findStyle(request.args?.[0], "characterStyles", request.args?.[1]));
+    if (request.namespace === "style" && request.method === "setParagraphStyleProperties") {
+      return styleSetProperties(request, "paragraphStyles", serializeParagraphStyle, "Update paragraph style");
+    }
+    if (request.namespace === "style" && request.method === "setCharacterStyleProperties") {
+      return styleSetProperties(request, "characterStyles", serializeCharacterStyle, "Update character style");
+    }
     if (request.namespace === "raw" && request.method === "evalJs") return evalJavaScript(asString(request.args?.[0]) ?? "", request.args?.slice(1) ?? []);
     methodNotFound(request.namespace, request.method);
   }
@@ -119,6 +149,84 @@ function serializeSpread(spread: unknown) {
   };
 }
 
+function serializeTextFrame(textFrame: unknown) {
+  if (!isObject(textFrame)) return null;
+  const parentStory = property(textFrame, "parentStory");
+  const parentPage = property(textFrame, "parentPage");
+  return {
+    id: property(textFrame, "id"),
+    name: asString(property(textFrame, "name")),
+    index: asNumber(property(textFrame, "index")) ?? property(textFrame, "index"),
+    contents: asString(property(textFrame, "contents")),
+    overflows: property(textFrame, "overflows"),
+    geometricBounds: serializeBounds(property(textFrame, "geometricBounds")),
+    parentStoryId: property(parentStory, "id"),
+    parentStoryName: asString(property(parentStory, "name")),
+    parentPageId: property(parentPage, "id"),
+    parentPageName: asString(property(parentPage, "name")),
+    isValid: property(textFrame, "isValid"),
+    typename: asString(property(textFrame, "typename"))
+  };
+}
+
+function serializeStory(story: unknown) {
+  if (!isObject(story)) return null;
+  const contents = asString(property(story, "contents"));
+  return {
+    id: property(story, "id"),
+    name: asString(property(story, "name")),
+    index: asNumber(property(story, "index")) ?? property(story, "index"),
+    contents,
+    length: contents?.length ?? asNumber(property(story, "length")) ?? property(story, "length"),
+    textContainerCount: asArray(property(story, "textContainers")).length,
+    paragraphCount: asArray(property(story, "paragraphs")).length,
+    isValid: property(story, "isValid"),
+    typename: asString(property(story, "typename"))
+  };
+}
+
+function serializeTextSelection(text: unknown) {
+  if (!isObject(text)) return null;
+  const parentStory = property(text, "parentStory");
+  return {
+    contents: asString(property(text, "contents")),
+    parentStoryId: property(parentStory, "id"),
+    parentStoryName: asString(property(parentStory, "name")),
+    index: asNumber(property(text, "index")) ?? property(text, "index"),
+    length: asNumber(property(text, "length")) ?? property(text, "length"),
+    isValid: property(text, "isValid"),
+    typename: asString(property(text, "typename"))
+  };
+}
+
+function serializeParagraphStyle(style: unknown) {
+  return serializeStyle(style, ["appliedFont", "fontStyle", "pointSize", "leading", "tracking", "justification"]);
+}
+
+function serializeCharacterStyle(style: unknown) {
+  return serializeStyle(style, ["appliedFont", "fontStyle", "pointSize", "leading", "tracking"]);
+}
+
+function serializeStyle(style: unknown, keys: string[]) {
+  if (!isObject(style)) return null;
+  const output: Record<string, unknown> = {
+    id: property(style, "id"),
+    name: asString(property(style, "name")),
+    index: asNumber(property(style, "index")) ?? property(style, "index"),
+    isValid: property(style, "isValid"),
+    typename: asString(property(style, "typename"))
+  };
+  for (const key of keys) {
+    try {
+      const value = property(style, key);
+      if (value !== undefined && typeof value !== "function") output[key] = scalarValue(value);
+    } catch {
+      // Style getters may throw for inherited or unset values; omit unavailable fields.
+    }
+  }
+  return output;
+}
+
 function serializeBounds(bounds: unknown) {
   return asArray(bounds).map((value) => asNumber(value) ?? value);
 }
@@ -192,4 +300,129 @@ async function pageSelect(request: RpcRequest) {
   if (!select) unavailable("InDesign page.select");
   await maybePromise(select.call(page, request.args?.[2]));
   return serializePage(page);
+}
+
+function documentTextFrames(request: RpcRequest) {
+  const document = findDocument(request.args?.[0]);
+  if (!document) return [];
+  return asArray(property(document, "textFrames")).map(serializeTextFrame).filter((textFrame) => textFrame !== null);
+}
+
+function documentStories(request: RpcRequest) {
+  const document = findDocument(request.args?.[0]);
+  if (!document) return [];
+  return asArray(property(document, "stories")).map(serializeStory).filter((story) => story !== null);
+}
+
+function documentStyles(request: RpcRequest, collectionName: string, serializer: (style: unknown) => Record<string, unknown> | null) {
+  const document = findDocument(request.args?.[0]);
+  if (!document) return [];
+  return asArray(property(document, collectionName)).map(serializer).filter((style) => style !== null);
+}
+
+function selectedText() {
+  return asArray(property(indesignApp(), "selection")).find((item) => property(item, "contents") !== undefined);
+}
+
+function findTextFrame(documentId: unknown, idOrName: unknown) {
+  if (idOrName === undefined || idOrName === null) return undefined;
+  const document = findDocument(documentId);
+  const frames = property(document, "textFrames");
+  const byName = property<Callable>(frames, "itemByName");
+  if (byName && typeof idOrName === "string") {
+    try {
+      const frame = byName.call(frames, idOrName);
+      if (frame) return frame;
+    } catch {
+      // Continue with manual matching when the host throws for a missing frame.
+    }
+  }
+  return asArray(frames).find((frame) => String(property(frame, "id")) === String(idOrName) || asString(property(frame, "name")) === String(idOrName));
+}
+
+function storyForTextFrame(documentId: unknown, textFrameId: unknown) {
+  return property(findTextFrame(documentId, textFrameId), "parentStory");
+}
+
+async function textFrameSetContents(request: RpcRequest) {
+  const textFrame = findTextFrame(request.args?.[0], request.args?.[1]);
+  if (!textFrame) unavailable("InDesign text frame");
+  return withInDesignCommand(request, "Set text frame contents", async () => {
+    (textFrame as Record<string, unknown>).contents = asString(request.args?.[2]) ?? "";
+    return serializeTextFrame(textFrame);
+  });
+}
+
+async function storySetContents(request: RpcRequest) {
+  const story = storyForTextFrame(request.args?.[0], request.args?.[1]) ?? findStory(request.args?.[0], request.args?.[1]);
+  if (!story) unavailable("InDesign story");
+  return withInDesignCommand(request, "Set story contents", async () => {
+    (story as Record<string, unknown>).contents = asString(request.args?.[2]) ?? "";
+    return serializeStory(story);
+  });
+}
+
+function findStory(documentId: unknown, idOrName: unknown) {
+  if (idOrName === undefined || idOrName === null) return undefined;
+  const document = findDocument(documentId);
+  const stories = property(document, "stories");
+  return asArray(stories).find((story) => String(property(story, "id")) === String(idOrName) || asString(property(story, "name")) === String(idOrName));
+}
+
+function findStyle(documentId: unknown, collectionName: string, name: unknown) {
+  if (name === undefined || name === null) return undefined;
+  const document = findDocument(documentId);
+  const collection = property(document, collectionName);
+  const byName = property<Callable>(collection, "itemByName");
+  if (byName && typeof name === "string") {
+    try {
+      const style = byName.call(collection, name);
+      if (style) return style;
+    } catch {
+      // Continue with manual matching when the host throws for a missing style.
+    }
+  }
+  return asArray(collection).find((style) => String(property(style, "id")) === String(name) || asString(property(style, "name")) === String(name));
+}
+
+async function styleSetProperties(
+  request: RpcRequest,
+  collectionName: string,
+  serializer: (style: unknown) => Record<string, unknown> | null,
+  defaultCommandName: string
+) {
+  const style = findStyle(request.args?.[0], collectionName, request.args?.[1]);
+  if (!style) unavailable(`InDesign ${collectionName}`);
+  const properties = isObject(request.args?.[2]) ? request.args?.[2] : {};
+  return withInDesignCommand(request, defaultCommandName, async () => {
+    for (const [key, value] of Object.entries(properties)) {
+      (style as Record<string, unknown>)[key] = value;
+    }
+    return serializer(style);
+  });
+}
+
+async function withInDesignCommand(request: RpcRequest, defaultCommandName: string, work: () => Promise<unknown>) {
+  const options = request.options ?? {};
+  const shouldNameCommand = options.modal === true || typeof options.commandName === "string";
+  const doScript = property<Callable>(indesignApp(), "doScript");
+  if (!shouldNameCommand || !doScript) return work();
+  const commandName = asString(options.commandName) ?? defaultCommandName;
+  return maybePromise(doScript.call(indesignApp(), () => work(), undefined, undefined, undefined, commandName));
+}
+
+function scalarValue(value: unknown) {
+  if (isObject(value)) {
+    const valueOf = property<Callable>(value, "valueOf");
+    if (valueOf) {
+      try {
+        const converted = valueOf.call(value);
+        if (!isObject(converted)) return converted;
+      } catch {
+        return value;
+      }
+    }
+    return asString(property(value, "name")) ?? property(value, "id") ?? value;
+  }
+  return value;
 }

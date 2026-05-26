@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = [
+    "setuptools>=69,<77; python_version < '3.9'",
+    "setuptools>=77; python_version >= '3.9'",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,8 +12,7 @@ description = "Python SDK and broker contracts for controlling Adobe desktop hos
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [{ name = "adobepy contributors" }]
-license = "MIT OR Apache-2.0"
-license-files = ["LICENSE-MIT", "LICENSE-APACHE"]
+license = { text = "MIT OR Apache-2.0" }
 keywords = ["adobe", "photoshop", "indesign", "premiere", "after-effects", "illustrator", "uxp", "cep", "python", "mcp"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -35,6 +37,7 @@ Documentation = "https://github.com/loonghao/adobepy/tree/main/docs"
 
 [tool.setuptools]
 package-dir = {"" = "python"}
+license-files = ["LICENSE-MIT", "LICENSE-APACHE"]
 
 [tool.setuptools.packages.find]
 where = ["python"]

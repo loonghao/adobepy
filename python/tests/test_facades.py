@@ -49,6 +49,37 @@ class CapturingClient:
                 return {**channel, "name": args[1] or "Alpha 2"}
             if method == "remove":
                 return channel
+        if host == "indesign" and namespace == "text":
+            text_frame = {
+                "id": 51,
+                "name": "Frame 1",
+                "index": 0,
+                "contents": "Hello",
+                "overflows": False,
+                "geometricBounds": [0, 0, 100, 200],
+                "parentStoryId": 61,
+                "parentStoryName": "Story 1",
+                "parentPageId": 31,
+                "parentPageName": "1",
+                "isValid": True,
+                "typename": "TextFrame",
+            }
+            if method == "getTextFrames":
+                return [text_frame]
+            if method == "getTextFrameByName":
+                return text_frame if args[1] == "Frame 1" else None
+            if method == "getSelectedText":
+                return {
+                    "contents": "selected",
+                    "parentStoryId": 61,
+                    "parentStoryName": "Story 1",
+                    "index": 3,
+                    "length": 8,
+                    "isValid": True,
+                    "typename": "Text",
+                }
+            if method == "setFrameContents":
+                return {**text_frame, "contents": args[2]}
         if namespace == "text":
             payload = {
                 "layerId": args[0] if args else 11,
@@ -129,6 +160,62 @@ class CapturingClient:
                 return spread
             if method == "getByName":
                 return spread if args[1] == "Spread 1" else None
+        if host == "indesign" and namespace == "story":
+            story = {
+                "id": 61,
+                "name": "Story 1",
+                "index": 0,
+                "contents": "Hello story",
+                "length": 11,
+                "textContainerCount": 1,
+                "paragraphCount": 2,
+                "isValid": True,
+                "typename": "Story",
+            }
+            if method == "getStories":
+                return [story]
+            if method in {"getByName", "getByTextFrameId"}:
+                return story if args[1] in {"Story 1", 51} else None
+            if method == "setContents":
+                return {**story, "contents": args[2], "length": len(args[2])}
+        if host == "indesign" and namespace == "style":
+            paragraph_style = {
+                "id": 71,
+                "name": "Body",
+                "index": 0,
+                "isValid": True,
+                "typename": "ParagraphStyle",
+                "appliedFont": "Minion Pro",
+                "fontStyle": "Regular",
+                "pointSize": 10,
+                "leading": 12,
+                "tracking": 0,
+                "justification": "left",
+            }
+            character_style = {
+                "id": 81,
+                "name": "Emphasis",
+                "index": 0,
+                "isValid": True,
+                "typename": "CharacterStyle",
+                "appliedFont": "Minion Pro",
+                "fontStyle": "Italic",
+                "pointSize": 10,
+                "leading": 12,
+                "tracking": 5,
+            }
+            if method == "getParagraphStyles":
+                return [paragraph_style]
+            if method == "getCharacterStyles":
+                return [character_style]
+            if method == "getParagraphStyleByName":
+                return paragraph_style if args[1] == "Body" else None
+            if method == "getCharacterStyleByName":
+                return character_style if args[1] == "Emphasis" else None
+            if method == "setParagraphStyleProperties":
+                return {**paragraph_style, **args[2]}
+            if method == "setCharacterStyleProperties":
+                return {**character_style, **args[2]}
         if namespace == "raw" and method == "evalJs":
             return {"source": args[0], "args": list(args[1:])}
         if namespace == "raw" and method == "getPath":
@@ -250,7 +337,8 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(client.calls[-1]["options"]["commandName"], "Batch")
 
     def test_indesign_and_premiere(self):
-        indesign = InDesign(client=CapturingClient())
+        indesign_client = CapturingClient()
+        indesign = InDesign(client=indesign_client)
         self.assertEqual(indesign.active_document.name, "demo")
         self.assertEqual(indesign.version, "19.5")
         self.assertEqual(indesign.activeDocument.pageCount, 2)
@@ -275,6 +363,76 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(indesign.activeDocument.get_spread("Spread 1").page_names, ["1", "2"])
         page = indesign.activeDocument.get_page("1")
         self.assertIs(page.select(), page)
+        self.assertEqual(indesign.selected_text.contents, "selected")
+        self.assertEqual(indesign.selected_text.parent_story_id, 61)
+        self.assertEqual(indesign.selected_text.index, 3)
+        self.assertEqual(indesign.selected_text.length, 8)
+        self.assertTrue(indesign.selected_text.is_valid)
+        self.assertEqual(indesign.selected_text.typename, "Text")
+        self.assertEqual(indesign.selectedText.parentStoryName, "Story 1")
+        frame = indesign.activeDocument.text_frames[0]
+        self.assertEqual(frame.id, 51)
+        self.assertEqual(frame.name, "Frame 1")
+        self.assertEqual(frame.index, 0)
+        self.assertEqual(frame.contents, "Hello")
+        self.assertFalse(frame.overflows)
+        self.assertEqual(frame.geometricBounds[2], 100)
+        self.assertEqual(frame.parentStoryId, 61)
+        self.assertEqual(frame.parent_story_name, "Story 1")
+        self.assertEqual(frame.parentPageId, 31)
+        self.assertEqual(frame.parentPageName, "1")
+        self.assertTrue(frame.isValid)
+        self.assertEqual(frame.typename, "TextFrame")
+        self.assertEqual(frame.story.contents, "Hello story")
+        self.assertEqual(indesign.activeDocument.getTextFrame("Frame 1").parent_page_name, "1")
+        self.assertEqual(frame.set_contents("World", command_name="Text").contents, "World")
+        self.assertEqual(indesign_client.calls[-1]["options"]["commandName"], "Text")
+        self.assertEqual(frame.setContents("Again", commandName="Text 2", timeoutMs=5).contents, "Again")
+        self.assertEqual(indesign_client.calls[-1]["options"]["timeoutMs"], 5)
+        story = indesign.activeDocument.stories[0]
+        self.assertEqual(story.id, 61)
+        self.assertEqual(story.name, "Story 1")
+        self.assertEqual(story.index, 0)
+        self.assertEqual(story.contents, "Hello story")
+        self.assertEqual(story.length, 11)
+        self.assertEqual(story.paragraph_count, 2)
+        self.assertTrue(story.isValid)
+        self.assertEqual(story.typename, "Story")
+        self.assertEqual(indesign.activeDocument.getStory("Story 1").textContainerCount, 1)
+        self.assertEqual(story.set_contents("Story snake", command_name="Story snake").contents, "Story snake")
+        self.assertEqual(story.setContents("Story", commandName="Story").length, 5)
+        self.assertEqual(indesign_client.calls[-1]["options"]["commandName"], "Story")
+        paragraph_style = indesign.activeDocument.paragraphStyles[0]
+        self.assertEqual(paragraph_style.id, 71)
+        self.assertEqual(paragraph_style.name, "Body")
+        self.assertEqual(paragraph_style.index, 0)
+        self.assertTrue(paragraph_style.isValid)
+        self.assertEqual(paragraph_style.typename, "ParagraphStyle")
+        self.assertEqual(paragraph_style.appliedFont, "Minion Pro")
+        self.assertEqual(paragraph_style.applied_font, "Minion Pro")
+        self.assertEqual(paragraph_style.fontStyle, "Regular")
+        self.assertEqual(paragraph_style.font_style, "Regular")
+        self.assertEqual(paragraph_style.point_size, 10)
+        self.assertEqual(paragraph_style.leading, 12)
+        self.assertEqual(paragraph_style.tracking, 0)
+        self.assertEqual(paragraph_style.justification, "left")
+        self.assertEqual(paragraph_style.update({"tracking": 1}, command_name="Paragraph").tracking, 1)
+        self.assertEqual(indesign_client.calls[-1]["options"]["commandName"], "Paragraph")
+        self.assertEqual(indesign.activeDocument.get_paragraph_style("Body").update(pointSize=12).pointSize, 12)
+        with self.assertRaises(AttributeError):
+            _ = paragraph_style.missing
+        character_style = indesign.activeDocument.character_styles[0]
+        self.assertEqual(character_style.id, 81)
+        self.assertEqual(character_style.name, "Emphasis")
+        self.assertEqual(character_style.index, 0)
+        self.assertTrue(character_style.is_valid)
+        self.assertEqual(character_style.typename, "CharacterStyle")
+        self.assertEqual(character_style.applied_font, "Minion Pro")
+        self.assertEqual(character_style.fontStyle, "Italic")
+        self.assertEqual(character_style.pointSize, 10)
+        self.assertEqual(character_style.leading, 12)
+        self.assertEqual(character_style.tracking, 5)
+        self.assertEqual(indesign.activeDocument.getCharacterStyle("Emphasis").update({"tracking": 20}).tracking, 20)
         self.assertEqual(Premiere(client=CapturingClient()).activeProject.name, "cut")
         self.assertEqual(Premiere(client=CapturingClient()).project.name, "cut")
         self.assertEqual(Premiere(client=CapturingClient()).version, "25.6")

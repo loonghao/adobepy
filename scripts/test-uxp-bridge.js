@@ -326,19 +326,81 @@ async function testInDesignBridge() {
   document.pages.itemByName = (name) => document.pages.find((page) => page.name === name);
   document.spreads = [spread];
   document.spreads.itemByName = (name) => document.spreads.find((item) => item.name === name);
+  const story = {
+    id: 61,
+    name: "Story 1",
+    index: 0,
+    contents: "Hello story",
+    paragraphs: [{}, {}],
+    isValid: true,
+    typename: "Story"
+  };
+  const textFrame = {
+    id: 51,
+    name: "Frame 1",
+    index: 0,
+    contents: "Hello",
+    overflows: false,
+    geometricBounds: [0, 0, 100, 200],
+    parentStory: story,
+    parentPage: page1,
+    isValid: true,
+    typename: "TextFrame"
+  };
+  story.textContainers = [textFrame];
+  document.textFrames = [textFrame];
+  document.textFrames.itemByName = (name) => document.textFrames.find((item) => item.name === name);
+  document.stories = [story];
+  const paragraphStyle = {
+    id: 71,
+    name: "Body",
+    index: 0,
+    appliedFont: "Minion Pro",
+    fontStyle: "Regular",
+    pointSize: 10,
+    leading: 12,
+    tracking: 0,
+    justification: "left",
+    isValid: true,
+    typename: "ParagraphStyle"
+  };
+  const characterStyle = {
+    id: 81,
+    name: "Emphasis",
+    index: 0,
+    appliedFont: "Minion Pro",
+    fontStyle: "Italic",
+    pointSize: 10,
+    leading: 12,
+    tracking: 5,
+    isValid: true,
+    typename: "CharacterStyle"
+  };
+  document.paragraphStyles = [paragraphStyle];
+  document.paragraphStyles.itemByName = (name) => document.paragraphStyles.find((style) => style.name === name);
+  document.characterStyles = [characterStyle];
+  document.characterStyles.itemByName = (name) => document.characterStyles.find((style) => style.name === name);
   const env = await loadBundle("bridges/uxp/indesign/dist/main.js", {
     indesign: {
       app: {
         version: "19.5.0",
         activeDocument: document,
         documents: [document],
-        activeWindow: { activePage: page1, activeSpread: spread }
+        activeWindow: { activePage: page1, activeSpread: spread },
+        selection: [{ contents: "selected", parentStory: story, index: 3, length: 8, isValid: true, typename: "Text" }],
+        doScript: async (target, _language, _args, _undoMode, commandName) => {
+          events.push({ kind: "doScript", commandName });
+          return await target();
+        }
       }
     }
   });
   assert.strictEqual(env.sent[0].capabilities.host, "indesign");
   assert.ok(env.sent[0].capabilities.methods.page.includes("getPages"));
   assert.ok(env.sent[0].capabilities.methods.spread.includes("getSpreads"));
+  assert.ok(env.sent[0].capabilities.methods.text.includes("getTextFrames"));
+  assert.ok(env.sent[0].capabilities.methods.story.includes("getStories"));
+  assert.ok(env.sent[0].capabilities.methods.style.includes("getParagraphStyles"));
   assert.strictEqual(result(await rpc(env, "indesign", "app", "getVersion")), "19.5.0");
   assert.strictEqual(result(await rpc(env, "indesign", "document", "getActive")).pageCount, 2);
   assert.strictEqual(result(await rpc(env, "indesign", "page", "getPages", [3]))[1].documentOffset, 1);
@@ -348,8 +410,24 @@ async function testInDesignBridge() {
   assert.strictEqual(result(await rpc(env, "indesign", "spread", "getSpreads", [3]))[0].pageNames[1], "2");
   assert.strictEqual(result(await rpc(env, "indesign", "spread", "getActive", [3])).pageCount, 2);
   assert.strictEqual(result(await rpc(env, "indesign", "spread", "getByName", [3, "Spread 1"])).id, 41);
+  assert.strictEqual(result(await rpc(env, "indesign", "text", "getTextFrames", [3]))[0].parentStoryName, "Story 1");
+  assert.strictEqual(result(await rpc(env, "indesign", "text", "getTextFrameByName", [3, "Frame 1"])).parentPageName, "1");
+  assert.strictEqual(result(await rpc(env, "indesign", "text", "getSelectedText")).contents, "selected");
+  assert.strictEqual(result(await rpc(env, "indesign", "text", "setFrameContents", [3, "Frame 1", "World"], { commandName: "Text" })).contents, "World");
+  assert.strictEqual(result(await rpc(env, "indesign", "story", "getStories", [3]))[0].paragraphCount, 2);
+  assert.strictEqual(result(await rpc(env, "indesign", "story", "getByName", [3, "Story 1"])).textContainerCount, 1);
+  assert.strictEqual(result(await rpc(env, "indesign", "story", "getByTextFrameId", [3, 51])).contents, "Hello story");
+  assert.strictEqual(result(await rpc(env, "indesign", "story", "setContents", [3, "Story 1", "Updated story"], { commandName: "Story" })).contents, "Updated story");
+  assert.strictEqual(result(await rpc(env, "indesign", "style", "getParagraphStyles", [3]))[0].appliedFont, "Minion Pro");
+  assert.strictEqual(result(await rpc(env, "indesign", "style", "getCharacterStyles", [3]))[0].fontStyle, "Italic");
+  assert.strictEqual(result(await rpc(env, "indesign", "style", "getParagraphStyleByName", [3, "Body"])).justification, "left");
+  assert.strictEqual(result(await rpc(env, "indesign", "style", "getCharacterStyleByName", [3, "Emphasis"])).tracking, 5);
+  assert.strictEqual(result(await rpc(env, "indesign", "style", "setParagraphStyleProperties", [3, "Body", { pointSize: 12 }], { commandName: "Paragraph" })).pointSize, 12);
+  assert.strictEqual(result(await rpc(env, "indesign", "style", "setCharacterStyleProperties", [3, "Emphasis", { tracking: 20 }], { commandName: "Character" })).tracking, 20);
   assert.strictEqual(result(await rpc(env, "indesign", "raw", "evalJs", ["40 + 2"])), 42);
   assert.ok(events.some((event) => event.kind === "page.select" && event.existingSelection === "replace"));
+  assert.ok(events.some((event) => event.kind === "doScript" && event.commandName === "Text"));
+  assert.ok(events.some((event) => event.kind === "doScript" && event.commandName === "Story"));
 }
 
 async function testPremiereBridge() {
