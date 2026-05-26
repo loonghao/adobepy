@@ -5,9 +5,30 @@
     {
       "name": "app",
       "methods": [{"name": "getVersion", "returns": "str"}],
-      "properties": [{"name": "active_document", "type": "Document | None", "source": "document.getActive"}]
+      "properties": [
+        {"name": "active_document", "type": "Document | None", "source": "document.getActive"},
+        {"name": "active_page", "type": "Page | None", "source": "page.getActive"},
+        {"name": "active_spread", "type": "Spread | None", "source": "spread.getActive"}
+      ]
     },
     {"name": "document", "methods": [{"name": "getActive", "returns": "Document | None"}]},
+    {
+      "name": "page",
+      "methods": [
+        {"name": "getPages", "returns": "list[Page]"},
+        {"name": "getActive", "returns": "Page | None"},
+        {"name": "getByName", "returns": "Page | None"},
+        {"name": "select", "returns": "Page", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "spread",
+      "methods": [
+        {"name": "getSpreads", "returns": "list[Spread]"},
+        {"name": "getActive", "returns": "Spread | None"},
+        {"name": "getByName", "returns": "Spread | None"}
+      ]
+    },
     {"name": "raw", "methods": [{"name": "evalJs", "returns": "Any"}]}
   ],
   "proxies": [
@@ -15,7 +36,52 @@
       "name": "DocumentProxy",
       "properties": [
         {"name": "id", "type": "int | str | None"},
-        {"name": "name", "type": "str | None"}
+        {"name": "name", "type": "str | None"},
+        {"name": "path", "type": "str | None"},
+        {"name": "width", "type": "Any"},
+        {"name": "height", "type": "Any"},
+        {"name": "page_count", "type": "int"},
+        {"name": "spread_count", "type": "int"},
+        {"name": "typename", "type": "str | None"},
+        {"name": "pages", "type": "list[Page]"},
+        {"name": "spreads", "type": "list[Spread]"},
+        {"name": "active_page", "type": "Page | None"},
+        {"name": "active_spread", "type": "Spread | None"}
+      ],
+      "methods": [
+        {"name": "getPage", "returns": "Page | None"},
+        {"name": "getSpread", "returns": "Spread | None"}
+      ]
+    },
+    {
+      "name": "PageProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "index", "type": "Any"},
+        {"name": "document_offset", "type": "Any"},
+        {"name": "side", "type": "Any"},
+        {"name": "bounds", "type": "list[Any]"},
+        {"name": "parent_id", "type": "int | str | None"},
+        {"name": "parent_name", "type": "str | None"},
+        {"name": "is_valid", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ],
+      "methods": [{"name": "select", "returns": "Page"}]
+    },
+    {
+      "name": "SpreadProxy",
+      "properties": [
+        {"name": "id", "type": "int | str | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "label", "type": "str | None"},
+        {"name": "index", "type": "Any"},
+        {"name": "page_count", "type": "int"},
+        {"name": "page_names", "type": "list[str]"},
+        {"name": "parent_id", "type": "int | str | None"},
+        {"name": "parent_name", "type": "str | None"},
+        {"name": "is_valid", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
       ]
     }
   ]

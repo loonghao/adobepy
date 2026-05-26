@@ -288,18 +288,68 @@ async function testPhotoshopBridge() {
 }
 
 async function testInDesignBridge() {
+  const events = [];
+  const document = {
+    id: 3,
+    name: "layout.indd",
+    fullName: { fsName: "C:/layout.indd" },
+    width: 800,
+    height: 600,
+    typename: "Document"
+  };
+  const spread = {
+    id: 41,
+    name: "Spread 1",
+    label: "Spread 1",
+    index: 0,
+    parent: document,
+    isValid: true,
+    typename: "Spread"
+  };
+  const page1 = {
+    id: 31,
+    name: "1",
+    index: 0,
+    documentOffset: 0,
+    side: "rightHand",
+    bounds: [0, 0, 800, 600],
+    parent: spread,
+    isValid: true,
+    typename: "Page",
+    select(existingSelection) {
+      events.push({ kind: "page.select", existingSelection });
+    }
+  };
+  const page2 = { ...page1, id: 32, name: "2", index: 1, documentOffset: 1 };
+  spread.pages = [page1, page2];
+  document.pages = [page1, page2];
+  document.pages.itemByName = (name) => document.pages.find((page) => page.name === name);
+  document.spreads = [spread];
+  document.spreads.itemByName = (name) => document.spreads.find((item) => item.name === name);
   const env = await loadBundle("bridges/uxp/indesign/dist/main.js", {
     indesign: {
       app: {
         version: "19.5.0",
-        activeDocument: { id: 3, name: "layout.indd", fullName: { fsName: "C:/layout.indd" }, width: 800, height: 600 }
+        activeDocument: document,
+        documents: [document],
+        activeWindow: { activePage: page1, activeSpread: spread }
       }
     }
   });
   assert.strictEqual(env.sent[0].capabilities.host, "indesign");
+  assert.ok(env.sent[0].capabilities.methods.page.includes("getPages"));
+  assert.ok(env.sent[0].capabilities.methods.spread.includes("getSpreads"));
   assert.strictEqual(result(await rpc(env, "indesign", "app", "getVersion")), "19.5.0");
-  assert.strictEqual(result(await rpc(env, "indesign", "document", "getActive")).path, "C:/layout.indd");
+  assert.strictEqual(result(await rpc(env, "indesign", "document", "getActive")).pageCount, 2);
+  assert.strictEqual(result(await rpc(env, "indesign", "page", "getPages", [3]))[1].documentOffset, 1);
+  assert.strictEqual(result(await rpc(env, "indesign", "page", "getActive", [3])).bounds[2], 800);
+  assert.strictEqual(result(await rpc(env, "indesign", "page", "getByName", [3, "1"])).parentName, "Spread 1");
+  assert.strictEqual(result(await rpc(env, "indesign", "page", "select", [3, "1", "replace"])).id, 31);
+  assert.strictEqual(result(await rpc(env, "indesign", "spread", "getSpreads", [3]))[0].pageNames[1], "2");
+  assert.strictEqual(result(await rpc(env, "indesign", "spread", "getActive", [3])).pageCount, 2);
+  assert.strictEqual(result(await rpc(env, "indesign", "spread", "getByName", [3, "Spread 1"])).id, 41);
   assert.strictEqual(result(await rpc(env, "indesign", "raw", "evalJs", ["40 + 2"])), 42);
+  assert.ok(events.some((event) => event.kind === "page.select" && event.existingSelection === "replace"));
 }
 
 async function testPremiereBridge() {

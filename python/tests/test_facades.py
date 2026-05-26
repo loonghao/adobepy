@@ -22,7 +22,10 @@ class CapturingClient:
                 return [{"id": 7, "name": "demo", "path": "C:/demo", "width": 100, "height": 50}]
             return {"photoshop": "26.0", "indesign": "19.5", "premiere": "25.6", "after-effects": "24.4", "illustrator": "28.2"}[host]
         if namespace == "document" and method == "getActive":
-            return {"id": 7, "name": "demo", "path": "C:/demo", "width": 100, "height": 50}
+            payload = {"id": 7, "name": "demo", "path": "C:/demo", "width": 100, "height": 50}
+            if host == "indesign":
+                payload.update({"pageCount": 2, "spreadCount": 1, "typename": "Document"})
+            return payload
         if namespace == "document" and method == "getById":
             return {"id": args[0], "name": "demo", "width": 100, "height": 50}
         if namespace == "document" and method in {"getLayers", "getActiveLayers"}:
@@ -86,6 +89,46 @@ class CapturingClient:
                 ]
             if method == "exportWithPreset":
                 return {"id": args[0]["id"], "name": "demo", "path": args[0]["path"], "width": 100, "height": 50}
+        if namespace == "page":
+            page = {
+                "id": 31,
+                "name": "1",
+                "index": 0,
+                "documentOffset": 0,
+                "side": "rightHand",
+                "bounds": [0, 0, 800, 600],
+                "parentId": 41,
+                "parentName": "Spread 1",
+                "isValid": True,
+                "typename": "Page",
+            }
+            if method == "getPages":
+                return [page, {**page, "id": 32, "name": "2", "index": 1, "documentOffset": 1}]
+            if method == "getActive":
+                return page
+            if method == "getByName":
+                return page if args[1] == "1" else None
+            if method == "select":
+                return page
+        if namespace == "spread":
+            spread = {
+                "id": 41,
+                "name": "Spread 1",
+                "label": "Spread 1",
+                "index": 0,
+                "pageCount": 2,
+                "pageNames": ["1", "2"],
+                "parentId": 7,
+                "parentName": "demo",
+                "isValid": True,
+                "typename": "Spread",
+            }
+            if method == "getSpreads":
+                return [spread]
+            if method == "getActive":
+                return spread
+            if method == "getByName":
+                return spread if args[1] == "Spread 1" else None
         if namespace == "raw" and method == "evalJs":
             return {"source": args[0], "args": list(args[1:])}
         if namespace == "raw" and method == "getPath":
@@ -207,8 +250,31 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(client.calls[-1]["options"]["commandName"], "Batch")
 
     def test_indesign_and_premiere(self):
-        self.assertEqual(InDesign(client=CapturingClient()).active_document.name, "demo")
-        self.assertEqual(InDesign(client=CapturingClient()).version, "19.5")
+        indesign = InDesign(client=CapturingClient())
+        self.assertEqual(indesign.active_document.name, "demo")
+        self.assertEqual(indesign.version, "19.5")
+        self.assertEqual(indesign.activeDocument.pageCount, 2)
+        self.assertEqual(indesign.activeDocument.spread_count, 1)
+        self.assertEqual(indesign.activeDocument.path, "C:/demo")
+        self.assertEqual(indesign.activeDocument.typename, "Document")
+        self.assertEqual(indesign.active_page.bounds[2], 800)
+        self.assertEqual(indesign.active_page.side, "rightHand")
+        self.assertEqual(indesign.active_page.parent_id, 41)
+        self.assertTrue(indesign.active_page.isValid)
+        self.assertEqual(indesign.activePage.parentName, "Spread 1")
+        self.assertEqual(indesign.active_spread.pageNames, ["1", "2"])
+        self.assertEqual(indesign.activeSpread.label, "Spread 1")
+        self.assertTrue(indesign.active_spread.is_valid)
+        self.assertEqual(indesign.active_spread.parentId, 7)
+        self.assertEqual(indesign.activeDocument.pages[1].documentOffset, 1)
+        self.assertEqual(indesign.activeDocument.spreads[0].page_count, 2)
+        self.assertEqual(indesign.activeDocument.get_page("1").typename, "Page")
+        self.assertEqual(indesign.activeDocument.getPage("1").index, 0)
+        self.assertIsNone(indesign.activeDocument.get_page("missing"))
+        self.assertEqual(indesign.activeDocument.getSpread("Spread 1").name, "Spread 1")
+        self.assertEqual(indesign.activeDocument.get_spread("Spread 1").page_names, ["1", "2"])
+        page = indesign.activeDocument.get_page("1")
+        self.assertIs(page.select(), page)
         self.assertEqual(Premiere(client=CapturingClient()).activeProject.name, "cut")
         self.assertEqual(Premiere(client=CapturingClient()).project.name, "cut")
         self.assertEqual(Premiere(client=CapturingClient()).version, "25.6")

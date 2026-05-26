@@ -147,11 +147,11 @@
         },
         {
           "name": "Pages and spreads",
-          "level": "planned",
+          "level": "mvp",
           "trackedBy": 7,
           "docRefs": ["InDesign DOM reference"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "irNamespaces": ["page", "spread"],
+          "facadeObjects": ["PageProxy", "SpreadProxy"]
         },
         {
           "name": "Text frames, stories, and styles",
