@@ -12,6 +12,7 @@ Photoshop-specific assumptions into shared modules.
 | `crates/adobepy-broker` | Local HTTP/WebSocket broker, auth, session routing, timeout and capability checks | Photoshop/InDesign/Premiere DOM logic |
 | `python/adobe/core` | Broker client, base session, capability normalization, shared errors | Host-specific facade imports |
 | `python/adobe/raw` | Explicit raw JavaScript/ExtendScript escape hatches | Typed host facade behavior |
+| `python/adobe/dcc_mcp` | Optional DCC MCP skill-result compatibility helpers and adobepy error mapping | MCP server lifecycle or host-specific behavior |
 | `python/adobe/<host>` | Python facade and Pythonic aliases for one Adobe host | Sibling host facades or transport implementation |
 | `bridges/uxp/core` | Generic UXP bridge transport and protocol handling | Host-specific UXP module names or DOM dispatch |
 | `bridges/cep/core` | Generic CEP/WebSocket transport and ExtendScript dispatch wrapper | After Effects or Illustrator business logic |
@@ -39,6 +40,8 @@ Photoshop-specific assumptions into shared modules.
 - UXP hosts prefer typed DOM calls before raw eval or `batchPlay`.
 - CEP hosts keep `evalExtendScript` separated from typed facade methods.
 - Raw payloads are only used at `adobe.raw` or clearly marked escape hatches.
+- DCC MCP helpers remain optional and do not make `dcc-mcp-core` a runtime
+  dependency of adobepy.
 - Broad host errors are converted to protocol error objects with useful
   diagnostics.
 - Every camelCase facade member has a snake_case Pythonic sibling.

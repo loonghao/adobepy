@@ -14,7 +14,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 PYTHON_ROOT = ROOT / "python" / "adobe"
 IR_DIR = ROOT / "generators" / "ir"
 API_SOURCES = ROOT / "generators" / "api_sources" / "adobe_api_sources.json"
-SHARED_PACKAGES = ("core", "raw")
+SHARED_PACKAGES = ("core", "raw", "dcc_mcp")
 
 
 class ArchitectureError(AssertionError):

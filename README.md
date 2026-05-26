@@ -14,6 +14,7 @@ Implemented pieces:
 - Rust `adobepy` CLI with `broker`, `doctor`, `install-bridge`, and `repl`.
 - Local JSON-RPC broker with per-session token, target, timeout, and capability gates.
 - Python SDK under `adobe.core`, `adobe.raw`, `adobe.photoshop`, `adobe.indesign`, `adobe.premiere`, `adobe.after_effects`, and `adobe.illustrator`.
+- Optional DCC MCP result helpers under `adobe.dcc_mcp` for adapter skill code.
 - UXP bridge templates for Photoshop, InDesign, and Premiere that dispatch to host APIs and broker raw JavaScript escape hatches.
 - CEP bridge templates for After Effects and Illustrator.
 - IR validation and `.pyi` stub generation.
@@ -43,7 +44,8 @@ vx just package
 The archive is written to `dist/adobepy-0.1.0-windows-x64.zip` with a sibling
 SHA256 file. Usage and packaging notes are in `docs/usage.md` and
 `docs/distribution.md`. Architecture boundaries and Adobe API source tracking
-are documented in `docs/architecture.md` and `docs/api-sources.md`.
+are documented in `docs/architecture.md`, `docs/api-sources.md`, and
+`docs/dcc-mcp-integration.md`.
 
 Python facade example:
 

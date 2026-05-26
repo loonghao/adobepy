@@ -80,6 +80,8 @@ the manifest, creates the archive, and writes the SHA256 file.
   same broker methods, including modal and timeout options.
 - Replay fixture tests: turn common Python examples into deterministic broker
   call traces.
+- DCC MCP mock integration tests: prove adapter-style skill functions can call
+  adobepy facades and receive DCC MCP result dicts without launching Photoshop.
 - Broker tests: assert auth, capability gating, request id restoration, timeout,
   disconnect cleanup, and HTTP endpoint behavior.
 - Bridge protocol tests: run bundled bridge JavaScript in Node VM contexts with
