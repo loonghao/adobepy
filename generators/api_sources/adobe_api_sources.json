@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "host": "photoshop",
+      "bridgeKind": "uxp",
+      "runtimeModule": "photoshop",
+      "entryPoint": "require('photoshop').app",
+      "ir": "generators/ir/photoshop-mvp.json",
+      "trackedBy": [5, 6],
+      "officialDocs": [
+        {
+          "name": "Photoshop UXP API",
+          "url": "https://developer.adobe.com/photoshop/uxp/2021/ps_reference/"
+        },
+        {
+          "name": "Photoshop batchPlay",
+          "url": "https://developer.adobe.com/photoshop/uxp/ps_reference/media/batchplay/"
+        }
+      ],
+      "secondaryRefs": [
+        {
+          "name": "Adobe UXP Photoshop plugin samples",
+          "url": "https://github.com/AdobeDocs/uxp-photoshop-plugin-samples"
+        }
+      ],
+      "coverageNotes": [
+        "Prefer DOM-backed facades before falling back to action.batchPlay.",
+        "Keep JS-shaped names and Pythonic aliases for every public facade member."
+      ]
+    },
+    {
+      "host": "indesign",
+      "bridgeKind": "uxp",
+      "runtimeModule": "indesign",
+      "entryPoint": "require('indesign').app",
+      "ir": "generators/ir/indesign-mvp.json",
+      "trackedBy": [5, 7],
+      "officialDocs": [
+        {
+          "name": "InDesign DOM APIs",
+          "url": "https://developer.adobe.com/indesign/uxp/resources/fundamentals/dom-versioning/"
+        },
+        {
+          "name": "InDesign DOM reference",
+          "url": "https://developer.adobe.com/indesign/dom/api/a/"
+        }
+      ],
+      "secondaryRefs": [],
+      "coverageNotes": [
+        "Track DOM-versioned UXP modules when mapping older ExtendScript examples to UXP."
+      ]
+    },
+    {
+      "host": "premiere",
+      "bridgeKind": "uxp",
+      "runtimeModule": "premierepro",
+      "entryPoint": "require('premierepro')",
+      "ir": "generators/ir/premiere-mvp.json",
+      "trackedBy": [5, 7],
+      "officialDocs": [
+        {
+          "name": "Premiere Pro UXP API",
+          "url": "https://developer.adobe.com/premiere-pro/uxp/"
+        },
+        {
+          "name": "Premiere Pro DOM API",
+          "url": "https://developer.adobe.com/premiere-pro/uxp/ppro-reference/"
+        }
+      ],
+      "secondaryRefs": [],
+      "coverageNotes": [
+        "Use the TypeScript declaration package as the preferred metadata source when expanding coverage."
+      ]
+    },
+    {
+      "host": "after-effects",
+      "bridgeKind": "cep",
+      "runtimeModule": "extendscript",
+      "entryPoint": "app",
+      "ir": "generators/ir/after-effects-mvp.json",
+      "trackedBy": [5, 8],
+      "officialDocs": [
+        {
+          "name": "After Effects scripts",
+          "url": "https://helpx.adobe.com/after-effects/using/scripts.html"
+        }
+      ],
+      "secondaryRefs": [
+        {
+          "name": "After Effects Scripting Guide mirror",
+          "url": "https://ae-scripting.docsforadobe.dev/"
+        },
+        {
+          "name": "Adobe ExtendScript guide mirror",
+          "url": "https://extendscript.docsforadobe.dev/"
+        }
+      ],
+      "coverageNotes": [
+        "Treat ExtendScript as a legacy runtime and keep raw evalExtendScript separate from typed facades."
+      ]
+    },
+    {
+      "host": "illustrator",
+      "bridgeKind": "cep",
+      "runtimeModule": "extendscript",
+      "entryPoint": "app",
+      "ir": "generators/ir/illustrator-mvp.json",
+      "trackedBy": [5, 8],
+      "officialDocs": [
+        {
+          "name": "Illustrator JavaScript Scripting Reference",
+          "url": "https://developer.adobe.com/console/servicesandapis"
+        }
+      ],
+      "secondaryRefs": [
+        {
+          "name": "Illustrator Scripting Guide mirror",
+          "url": "https://ai-scripting.docsforadobe.dev/"
+        },
+        {
+          "name": "Adobe ExtendScript guide mirror",
+          "url": "https://extendscript.docsforadobe.dev/"
+        }
+      ],
+      "coverageNotes": [
+        "Adobe's latest Illustrator JavaScript reference may require Developer Console access; keep the mirror marked as secondary."
+      ]
+    }
+  ]
+}

@@ -12,6 +12,12 @@ quick:
 bridges:
     npm run test:bridges
 
+replay:
+    npm run test:replay
+
+api-sources:
+    npm run api:sources:validate
+
 lint:
     cargo fmt --check
     cargo clippy --workspace --all-targets -- -D warnings

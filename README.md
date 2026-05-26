@@ -42,7 +42,8 @@ vx just package
 
 The archive is written to `dist/adobepy-0.1.0-windows-x64.zip` with a sibling
 SHA256 file. Usage and packaging notes are in `docs/usage.md` and
-`docs/distribution.md`.
+`docs/distribution.md`. Adobe API source tracking is documented in
+`docs/api-sources.md`.
 
 Python facade example:
 

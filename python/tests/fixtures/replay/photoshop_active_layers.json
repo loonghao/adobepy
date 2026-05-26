@@ -1,0 +1,54 @@
+{
+  "name": "photoshop-active-layers",
+  "host": "photoshop",
+  "description": "Pythonic replay for: for layer in app.activeLayers: print(layer.name)",
+  "script": "for layer in app.activeLayers:\n    print(layer.name)\n",
+  "expectedStdout": ["Background", "Grade"],
+  "exchanges": [
+    {
+      "request": {
+        "host": "photoshop",
+        "namespace": "document",
+        "method": "getActive",
+        "args": [],
+        "options": {}
+      },
+      "response": {
+        "result": {
+          "id": 7,
+          "name": "hero.psd",
+          "path": "C:/work/hero.psd",
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "request": {
+        "host": "photoshop",
+        "namespace": "document",
+        "method": "getActiveLayers",
+        "args": [7],
+        "options": {}
+      },
+      "response": {
+        "result": [
+          {
+            "id": 11,
+            "name": "Background",
+            "kind": "pixel",
+            "opacity": 100,
+            "visible": true
+          },
+          {
+            "id": 12,
+            "name": "Grade",
+            "kind": "adjustment",
+            "opacity": 80,
+            "visible": true
+          }
+        ]
+      }
+    }
+  ]
+}

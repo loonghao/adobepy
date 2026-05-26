@@ -30,6 +30,20 @@ Full local gate. It runs the quick gate plus bridge protocol tests. It is the
 default acceptance command before publishing.
 
 ```powershell
+npm run api:sources:validate
+```
+
+Offline source-registry gate. It ensures every IR host has a tracked Adobe API
+reference entry before facade coverage expands.
+
+```powershell
+npm run test:replay
+```
+
+Fixture replay gate. It executes small Python facade examples against recorded
+broker responses so user-facing snippets become regression tests.
+
+```powershell
 vx just package
 ```
 
@@ -41,8 +55,12 @@ the manifest, creates the archive, and writes the SHA256 file.
 
 - IR contract tests: validate every `generators/ir/*.json` contract and generated
   `.pyi` output before facade or bridge code relies on it.
+- API source tests: validate the Adobe reference registry used to expand API
+  coverage and aliases.
 - Python facade tests: assert JS-shaped aliases and Pythonic aliases call the
   same broker methods, including modal and timeout options.
+- Replay fixture tests: turn common Python examples into deterministic broker
+  call traces.
 - Broker tests: assert auth, capability gating, request id restoration, timeout,
   disconnect cleanup, and HTTP endpoint behavior.
 - Bridge protocol tests: run bundled bridge JavaScript in Node VM contexts with
@@ -57,16 +75,16 @@ the manifest, creates the archive, and writes the SHA256 file.
 - Golden capability snapshots: serialize each bridge `hello.capabilities` payload
   and compare it to the matching IR file so a bridge cannot advertise methods the
   Python facade does not expose.
-- Fixture replay tests: keep small JSON traces for common scripts such as
-  `for layer in app.activeLayers: print(layer.name)` and replay them through the
-  Python client, broker, and mocked bridge.
+- Broader fixture replay tests: add traces for save/export, modal operations,
+  Premiere project access, and CEP `evalExtendScript` flows.
 - Live-host smoke tests: keep them optional and narrow. A self-hosted runner with
   Photoshop and UXP Developer Tool can load the plugin, start the broker, execute
   one read-only script, and export logs. CI should stay green without desktop
   Adobe apps.
 - Official API drift checks: periodically crawl or vendor official UXP/DOM type
-  metadata and diff generated facade names against the current IR. Treat drift as
-  a review signal, not an automatic breaking change.
+  metadata from `generators/api_sources/adobe_api_sources.json` and diff
+  generated facade names against the current IR. Treat drift as a review signal,
+  not an automatic breaking change.
 - Wasm build smoke: once `vx` provides the wasm build provider here, add a small
   canary package that compiles, loads through the bridge bundle, and returns a
   deterministic value from Node VM tests.
