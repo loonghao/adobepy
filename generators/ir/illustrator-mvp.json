@@ -8,6 +8,31 @@
       "properties": [{"name": "active_document", "type": "Document | None", "source": "document.getActive"}]
     },
     {"name": "document", "methods": [{"name": "getActive", "returns": "Document | None"}]},
+    {
+      "name": "artboard",
+      "methods": [
+        {"name": "getArtboards", "returns": "list[Artboard]"},
+        {"name": "getActive", "returns": "Artboard | None"},
+        {"name": "getActiveIndex", "returns": "int | None"}
+      ]
+    },
+    {
+      "name": "layer",
+      "methods": [
+        {"name": "getLayers", "returns": "list[Layer]"},
+        {"name": "getByName", "returns": "Layer | None"},
+        {"name": "getChildren", "returns": "list[Layer]"}
+      ]
+    },
+    {
+      "name": "pageItem",
+      "methods": [
+        {"name": "getPageItems", "returns": "list[PageItem]"},
+        {"name": "getSelected", "returns": "list[PageItem]"},
+        {"name": "getByName", "returns": "PageItem | None"},
+        {"name": "getLayerItems", "returns": "list[PageItem]"}
+      ]
+    },
     {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any", "raw": true}]}
   ],
   "proxies": [
@@ -17,7 +42,84 @@
         {"name": "name", "type": "str | None"},
         {"name": "path", "type": "str | None"},
         {"name": "width", "type": "Any"},
-        {"name": "height", "type": "Any"}
+        {"name": "height", "type": "Any"},
+        {"name": "artboard_count", "type": "int | None"},
+        {"name": "layer_count", "type": "int | None"},
+        {"name": "page_item_count", "type": "int | None"},
+        {"name": "selection_count", "type": "int | None"},
+        {"name": "artboards", "type": "list[Artboard]", "source": "artboard.getArtboards"},
+        {"name": "active_artboard", "type": "Artboard | None", "source": "artboard.getActive"},
+        {"name": "active_artboard_index", "type": "int | None", "source": "artboard.getActiveIndex"},
+        {"name": "layers", "type": "list[Layer]", "source": "layer.getLayers"},
+        {"name": "page_items", "type": "list[PageItem]", "source": "pageItem.getPageItems"},
+        {"name": "selection", "type": "list[PageItem]", "source": "pageItem.getSelected"},
+        {"name": "typename", "type": "str | None"}
+      ],
+      "methods": [
+        {"name": "getLayerByName", "returns": "Layer | None"},
+        {"name": "getPageItemByName", "returns": "PageItem | None"}
+      ]
+    },
+    {
+      "name": "ArtboardProxy",
+      "properties": [
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "artboard_rect", "type": "Any"},
+        {"name": "ruler_origin", "type": "Any"},
+        {"name": "ruler_par", "type": "Any"},
+        {"name": "show_center", "type": "bool | None"},
+        {"name": "show_cross_hairs", "type": "bool | None"},
+        {"name": "show_safe_areas", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "LayerProxy",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "visible", "type": "bool | None"},
+        {"name": "locked", "type": "bool | None"},
+        {"name": "printable", "type": "bool | None"},
+        {"name": "preview", "type": "bool | None"},
+        {"name": "opacity", "type": "float | None"},
+        {"name": "has_selected_artwork", "type": "bool | None"},
+        {"name": "parent_name", "type": "str | None"},
+        {"name": "parent_typename", "type": "str | None"},
+        {"name": "layer_count", "type": "int | None"},
+        {"name": "page_item_count", "type": "int | None"},
+        {"name": "layers", "type": "list[Layer]", "source": "layer.getChildren"},
+        {"name": "page_items", "type": "list[PageItem]", "source": "pageItem.getLayerItems"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "PageItemProxy",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "item_type", "type": "str | None"},
+        {"name": "hidden", "type": "bool | None"},
+        {"name": "locked", "type": "bool | None"},
+        {"name": "selected", "type": "bool | None"},
+        {"name": "editable", "type": "bool | None"},
+        {"name": "sliced", "type": "bool | None"},
+        {"name": "position", "type": "Any"},
+        {"name": "geometric_bounds", "type": "Any"},
+        {"name": "visible_bounds", "type": "Any"},
+        {"name": "control_bounds", "type": "Any"},
+        {"name": "width", "type": "Any"},
+        {"name": "height", "type": "Any"},
+        {"name": "opacity", "type": "float | None"},
+        {"name": "parent_name", "type": "str | None"},
+        {"name": "parent_typename", "type": "str | None"},
+        {"name": "layer_name", "type": "str | None"},
+        {"name": "note", "type": "str | None"},
+        {"name": "url", "type": "str | None"},
+        {"name": "typename", "type": "str | None"}
       ]
     }
   ]

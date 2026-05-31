@@ -367,15 +367,99 @@ function testExtendScriptDispatchers() {
   assert.strictEqual(dispatch(ae, "ae_raw", "raw", "evalExtendScript", ["app.version"]).result, "24.4.1");
   assert.strictEqual(dispatch(ae, "ae_missing", "layer", "getActive").error.code, -32601);
 
+  const aiArtboards = [
+    { name: "Artboard 1", artboardRect: [0, 500, 500, 0], rulerOrigin: [0, 0], rulerPAR: 1, showCenter: true, showCrossHairs: false, showSafeAreas: false },
+    { name: "Artboard 2", artboardRect: [500, 500, 1000, 0], rulerOrigin: [0, 0], rulerPAR: 1, showCenter: false, showCrossHairs: true, showSafeAreas: true },
+  ];
+  aiArtboards.getActiveArtboardIndex = () => 1;
+  const aiLayer = {
+    name: "Artwork",
+    visible: true,
+    locked: false,
+    printable: true,
+    preview: true,
+    opacity: 85,
+    hasSelectedArtwork: true,
+    typename: "Layer",
+  };
+  const aiChildLayer = {
+    name: "Icons",
+    visible: true,
+    locked: false,
+    printable: true,
+    preview: true,
+    opacity: 100,
+    hasSelectedArtwork: false,
+    typename: "Layer",
+  };
+  const aiPageItem = {
+    uuid: "item-1",
+    name: "Logo",
+    typename: "PathItem",
+    hidden: false,
+    locked: false,
+    selected: true,
+    editable: true,
+    sliced: false,
+    position: [10, 490],
+    geometricBounds: [10, 490, 110, 390],
+    visibleBounds: [8, 492, 112, 388],
+    controlBounds: [5, 495, 115, 385],
+    width: 100,
+    height: 100,
+    opacity: 100,
+    note: "brand",
+    uRL: "https://example.com",
+    layer: aiLayer,
+    parent: aiLayer,
+  };
+  const aiPlacedItem = { ...aiPageItem, uuid: "item-2", name: "Placed", typename: "PlacedItem", selected: false };
+  aiLayer.layers = [aiChildLayer];
+  aiLayer.pageItems = [aiPageItem, aiPlacedItem];
+  aiLayer.parent = { name: "poster.ai", typename: "Document" };
+  aiChildLayer.layers = [];
+  aiChildLayer.pageItems = [aiPageItem];
+  aiChildLayer.parent = aiLayer;
+  const aiDocument = {
+    name: "poster.ai",
+    fullName: { fsName: "C:/poster.ai" },
+    width: 800,
+    height: 600,
+    artboards: aiArtboards,
+    layers: [aiLayer],
+    pageItems: [aiPageItem, aiPlacedItem],
+    selection: [aiPageItem],
+    typename: "Document",
+  };
   const ai = loadDispatcher(illustratorDispatcherPath, {
     app: {
       version: "28.2.0",
       documents: { length: 1 },
-      activeDocument: { name: "poster.ai", fullName: { fsName: "C:/poster.ai" }, width: 800, height: 600 },
+      activeDocument: aiDocument,
     },
   });
   assert.deepStrictEqual(dispatch(ai, "ai_app", "app", "getVersion").result, "28.2.0");
-  assert.deepStrictEqual(dispatch(ai, "ai_doc", "document", "getActive").result, { name: "poster.ai", path: "C:/poster.ai", width: 800, height: 600 });
+  assert.deepStrictEqual(dispatch(ai, "ai_doc", "document", "getActive").result, {
+    name: "poster.ai",
+    path: "C:/poster.ai",
+    width: 800,
+    height: 600,
+    artboardCount: 2,
+    layerCount: 1,
+    pageItemCount: 2,
+    selectionCount: 1,
+    typename: "Document",
+  });
+  assert.strictEqual(dispatch(ai, "ai_artboards", "artboard", "getArtboards").result[0].name, "Artboard 1");
+  assert.strictEqual(dispatch(ai, "ai_active_artboard", "artboard", "getActive").result.name, "Artboard 2");
+  assert.strictEqual(dispatch(ai, "ai_active_artboard_index", "artboard", "getActiveIndex").result, 1);
+  assert.strictEqual(dispatch(ai, "ai_layers", "layer", "getLayers").result[0].pageItemCount, 2);
+  assert.strictEqual(dispatch(ai, "ai_layer_by_name", "layer", "getByName", ["Artwork"]).result.name, "Artwork");
+  assert.strictEqual(dispatch(ai, "ai_layer_children", "layer", "getChildren", ["Artwork"]).result[0].name, "Icons");
+  assert.strictEqual(dispatch(ai, "ai_page_items", "pageItem", "getPageItems").result[0].typename, "PathItem");
+  assert.strictEqual(dispatch(ai, "ai_selected_items", "pageItem", "getSelected").result[0].selected, true);
+  assert.strictEqual(dispatch(ai, "ai_page_item_by_name", "pageItem", "getByName", ["Logo"]).result.layerName, "Artwork");
+  assert.strictEqual(dispatch(ai, "ai_layer_page_items", "pageItem", "getLayerItems", ["Artwork"]).result[0].name, "Logo");
   assert.strictEqual(dispatch(ai, "ai_raw", "raw", "evalExtendScript", ["app.version"]).result, "28.2.0");
 
   const aiNoDocument = loadDispatcher(illustratorDispatcherPath, { app: { version: "28.2.0", documents: { length: 0 } } });

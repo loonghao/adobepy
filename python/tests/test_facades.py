@@ -25,6 +25,8 @@ class CapturingClient:
             payload = {"id": 7, "name": "demo", "path": "C:/demo", "width": 100, "height": 50}
             if host == "indesign":
                 payload.update({"pageCount": 2, "spreadCount": 1, "typename": "Document"})
+            if host == "illustrator":
+                payload.update({"artboardCount": 2, "layerCount": 1, "pageItemCount": 2, "selectionCount": 1, "typename": "Document"})
             return payload
         if namespace == "document" and method == "getById":
             return {"id": args[0], "name": "demo", "width": 100, "height": 50}
@@ -256,6 +258,95 @@ class CapturingClient:
         if host == "indesign" and namespace == "package":
             if method == "packageForPrint":
                 return {"ok": True, "path": args[0]["path"], "document": {"id": args[0]["id"], "name": "demo"}}
+        if host == "illustrator" and namespace == "artboard":
+            artboards = [
+                {
+                    "index": 0,
+                    "name": "Artboard 1",
+                    "artboardRect": [0, 500, 500, 0],
+                    "rulerOrigin": [0, 0],
+                    "rulerPAR": 1,
+                    "showCenter": True,
+                    "showCrossHairs": False,
+                    "showSafeAreas": False,
+                    "typename": "Artboard",
+                },
+                {
+                    "index": 1,
+                    "name": "Artboard 2",
+                    "artboardRect": [500, 500, 1000, 0],
+                    "rulerOrigin": [0, 0],
+                    "rulerPAR": 1,
+                    "showCenter": False,
+                    "showCrossHairs": True,
+                    "showSafeAreas": True,
+                    "typename": "Artboard",
+                },
+            ]
+            if method == "getArtboards":
+                return artboards
+            if method == "getActive":
+                return artboards[1]
+            if method == "getActiveIndex":
+                return 1
+        if host == "illustrator" and namespace == "layer":
+            layer = {
+                "id": "layer-1",
+                "index": 0,
+                "name": "Artwork",
+                "visible": True,
+                "locked": False,
+                "printable": True,
+                "preview": True,
+                "opacity": 85,
+                "hasSelectedArtwork": True,
+                "parentName": "demo",
+                "parentTypename": "Document",
+                "layerCount": 1,
+                "pageItemCount": 2,
+                "typename": "Layer",
+            }
+            child = {**layer, "id": "layer-2", "index": 0, "name": "Icons", "parentName": "Artwork", "parentTypename": "Layer", "layerCount": 0, "pageItemCount": 1}
+            if method == "getLayers":
+                return [layer]
+            if method == "getByName":
+                return layer if args[0] == "Artwork" else None
+            if method == "getChildren":
+                return [child] if args[0] in {"layer-1", "Artwork", 0} else []
+        if host == "illustrator" and namespace == "pageItem":
+            item = {
+                "id": "item-1",
+                "index": 0,
+                "name": "Logo",
+                "itemType": "PathItem",
+                "hidden": False,
+                "locked": False,
+                "selected": True,
+                "editable": True,
+                "sliced": False,
+                "position": [10, 490],
+                "geometricBounds": [10, 490, 110, 390],
+                "visibleBounds": [8, 492, 112, 388],
+                "controlBounds": [5, 495, 115, 385],
+                "width": 100,
+                "height": 100,
+                "opacity": 100,
+                "parentName": "Artwork",
+                "parentTypename": "Layer",
+                "layerName": "Artwork",
+                "note": "brand",
+                "url": "https://example.com",
+                "typename": "PathItem",
+            }
+            second = {**item, "id": "item-2", "index": 1, "name": "Placed", "itemType": "PlacedItem", "selected": False, "typename": "PlacedItem"}
+            if method == "getPageItems":
+                return [item, second]
+            if method == "getSelected":
+                return [item]
+            if method == "getByName":
+                return item if args[0] == "Logo" else None
+            if method == "getLayerItems":
+                return [item] if args[0] in {"layer-1", "Artwork", 0} else []
         if namespace == "raw" and method == "evalJs":
             return {"source": args[0], "args": list(args[1:])}
         if namespace == "raw" and method == "getPath":
@@ -1218,6 +1309,87 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(illustrator.version, "28.2")
         self.assertEqual(illustrator.activeDocument.name, "demo")
         self.assertEqual(illustrator.active_document.path, "C:/demo")
+        doc = illustrator.active_document
+        self.assertEqual(doc.artboard_count, 2)
+        self.assertEqual(doc.artboardCount, 2)
+        self.assertEqual(doc.layer_count, 1)
+        self.assertEqual(doc.page_item_count, 2)
+        self.assertEqual(doc.selection_count, 1)
+        self.assertEqual(doc.typename, "Document")
+        self.assertEqual(doc.artboards[0].name, "Artboard 1")
+        self.assertEqual(doc.artboards[0].artboard_rect, [0, 500, 500, 0])
+        self.assertEqual(doc.artboards[0].artboardRect, [0, 500, 500, 0])
+        self.assertEqual(doc.artboards[0].ruler_origin, [0, 0])
+        self.assertEqual(doc.artboards[0].rulerOrigin, [0, 0])
+        self.assertEqual(doc.artboards[0].ruler_par, 1)
+        self.assertEqual(doc.artboards[0].rulerPar, 1)
+        self.assertTrue(doc.artboards[0].show_center)
+        self.assertTrue(doc.artboards[0].showCenter)
+        self.assertFalse(doc.artboards[0].show_cross_hairs)
+        self.assertFalse(doc.artboards[0].showCrossHairs)
+        self.assertFalse(doc.artboards[0].show_safe_areas)
+        self.assertFalse(doc.artboards[0].showSafeAreas)
+        self.assertEqual(doc.active_artboard.name, "Artboard 2")
+        self.assertEqual(doc.activeArtboard.index, 1)
+        self.assertEqual(doc.active_artboard_index, 1)
+        self.assertEqual(doc.activeArtboardIndex, 1)
+        layer = doc.layers[0]
+        self.assertEqual(layer.id, "layer-1")
+        self.assertEqual(layer.index, 0)
+        self.assertEqual(layer.name, "Artwork")
+        self.assertTrue(layer.visible)
+        self.assertFalse(layer.locked)
+        self.assertTrue(layer.printable)
+        self.assertTrue(layer.preview)
+        self.assertEqual(layer.opacity, 85)
+        self.assertTrue(layer.has_selected_artwork)
+        self.assertTrue(layer.hasSelectedArtwork)
+        self.assertEqual(layer.parent_name, "demo")
+        self.assertEqual(layer.parentName, "demo")
+        self.assertEqual(layer.parent_typename, "Document")
+        self.assertEqual(layer.parentTypename, "Document")
+        self.assertEqual(layer.layer_count, 1)
+        self.assertEqual(layer.layerCount, 1)
+        self.assertEqual(layer.page_item_count, 2)
+        self.assertEqual(layer.pageItemCount, 2)
+        self.assertEqual(layer.layers[0].name, "Icons")
+        self.assertEqual(layer.page_items[0].name, "Logo")
+        self.assertEqual(layer.pageItems[0].typename, "PathItem")
+        self.assertEqual(doc.get_layer_by_name("Artwork").pageItemCount, 2)
+        self.assertEqual(doc.getLayerByName("Artwork").typename, "Layer")
+        page_item = doc.page_items[0]
+        self.assertEqual(page_item.id, "item-1")
+        self.assertEqual(page_item.index, 0)
+        self.assertEqual(page_item.name, "Logo")
+        self.assertEqual(page_item.item_type, "PathItem")
+        self.assertEqual(page_item.itemType, "PathItem")
+        self.assertFalse(page_item.hidden)
+        self.assertFalse(page_item.locked)
+        self.assertTrue(page_item.selected)
+        self.assertTrue(page_item.editable)
+        self.assertFalse(page_item.sliced)
+        self.assertEqual(page_item.position, [10, 490])
+        self.assertEqual(page_item.geometric_bounds, [10, 490, 110, 390])
+        self.assertEqual(page_item.geometricBounds, [10, 490, 110, 390])
+        self.assertEqual(page_item.visible_bounds, [8, 492, 112, 388])
+        self.assertEqual(page_item.visibleBounds, [8, 492, 112, 388])
+        self.assertEqual(page_item.control_bounds, [5, 495, 115, 385])
+        self.assertEqual(page_item.controlBounds, [5, 495, 115, 385])
+        self.assertEqual(page_item.width, 100)
+        self.assertEqual(page_item.height, 100)
+        self.assertEqual(page_item.opacity, 100)
+        self.assertEqual(page_item.parent_name, "Artwork")
+        self.assertEqual(page_item.parentName, "Artwork")
+        self.assertEqual(page_item.parent_typename, "Layer")
+        self.assertEqual(page_item.parentTypename, "Layer")
+        self.assertEqual(page_item.layer_name, "Artwork")
+        self.assertEqual(page_item.layerName, "Artwork")
+        self.assertEqual(page_item.note, "brand")
+        self.assertEqual(page_item.url, "https://example.com")
+        self.assertEqual(page_item.typename, "PathItem")
+        self.assertEqual(doc.selection[0].name, "Logo")
+        self.assertEqual(doc.get_page_item_by_name("Logo").typename, "PathItem")
+        self.assertEqual(doc.getPageItemByName("Logo").layerName, "Artwork")
 
     def test_raw_session(self):
         client = CapturingClient()

@@ -382,7 +382,7 @@
       "runtimeModule": "extendscript",
       "entryPoint": "app",
       "ir": "generators/ir/illustrator-mvp.json",
-      "trackedBy": [5, 8],
+      "trackedBy": [5, 8, 21],
       "officialDocs": [
         {
           "name": "Illustrator JavaScript Scripting Reference",
@@ -393,6 +393,34 @@
         {
           "name": "Illustrator Scripting Guide mirror",
           "url": "https://ai-scripting.docsforadobe.dev/"
+        },
+        {
+          "name": "Illustrator Document object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/Document/"
+        },
+        {
+          "name": "Illustrator Artboards object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/Artboards/"
+        },
+        {
+          "name": "Illustrator Artboard object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/Artboard/"
+        },
+        {
+          "name": "Illustrator Layers object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/Layers/"
+        },
+        {
+          "name": "Illustrator Layer object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/Layer/"
+        },
+        {
+          "name": "Illustrator PageItems object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/PageItems/"
+        },
+        {
+          "name": "Illustrator PageItem object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/PageItem/"
         },
         {
           "name": "Adobe ExtendScript guide mirror",
@@ -421,11 +449,11 @@
         },
         {
           "name": "Artboards, layers, and page items",
-          "level": "planned",
-          "trackedBy": 8,
-          "docRefs": ["Illustrator Scripting Guide mirror"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "level": "mvp",
+          "trackedBy": 21,
+          "docRefs": ["Illustrator Document object", "Illustrator Artboards object", "Illustrator Artboard object", "Illustrator Layers object", "Illustrator Layer object", "Illustrator PageItems object", "Illustrator PageItem object"],
+          "irNamespaces": ["artboard", "layer", "pageItem"],
+          "facadeObjects": ["ArtboardProxy", "LayerProxy", "PageItemProxy"]
         },
         {
           "name": "Path items, compound paths, and placed/raster items",

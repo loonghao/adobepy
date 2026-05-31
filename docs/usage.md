@@ -93,6 +93,37 @@ Use `adobe.raw.RawSession("after-effects").eval_extendscript(...)` for APIs
 outside the typed composition/project-item/render-queue facade, such as deep
 layer/property mutation before those namespaces are added.
 
+Illustrator exposes common document, artboard, layer, and page-item collections
+with JavaScript-shaped names and Pythonic aliases:
+
+```python
+from adobe.illustrator import Illustrator
+
+app = Illustrator()
+doc = app.active_document
+
+print(doc.name, doc.active_artboard.name, doc.active_artboard_index)
+
+for artboard in doc.artboards:
+    print(artboard.index, artboard.name, artboard.artboard_rect)
+
+for layer in doc.layers:
+    print(layer.name, layer.visible, layer.locked)
+    for child in layer.layers:
+        print("child", child.name)
+    for item in layer.page_items:
+        print(item.typename, item.name, item.geometric_bounds)
+
+for item in doc.selection:
+    print(item.name, item.layer_name)
+
+logo = doc.get_page_item_by_name("Logo")
+```
+
+Use `adobe.raw.RawSession("illustrator").eval_extendscript(...)` for Illustrator
+APIs outside the typed document/artboard/layer/page-item facade, such as path
+construction, text-frame editing, swatches, colors, and export workflows.
+
 ## Bridges
 
 ```powershell

@@ -63,9 +63,16 @@
       host: "illustrator",
       bridgeKind: "cep",
       bridgeVersion: "0.1.0",
-      namespaces: ["app", "document", "raw"],
-      features: ["extendscript"],
-      methods: { app: ["getVersion"], document: ["getActive"], raw: ["evalExtendScript"] }
+      namespaces: ["app", "document", "artboard", "layer", "pageItem", "raw"],
+      features: ["extendscript", "document", "artboards", "layers", "pageItems", "selection"],
+      methods: {
+        app: ["getVersion"],
+        document: ["getActive"],
+        artboard: ["getArtboards", "getActive", "getActiveIndex"],
+        layer: ["getLayers", "getByName", "getChildren"],
+        pageItem: ["getPageItems", "getSelected", "getByName", "getLayerItems"],
+        raw: ["evalExtendScript"]
+      }
     }
   });
 })();
