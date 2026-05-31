@@ -67,6 +67,101 @@ function adobepyDispatch(payload) {
       var setTextComp = adobepyAfterEffectsRequireComp(app.project, setTextArgs[0]);
       return adobepyResult(request.id, adobepyAfterEffectsSetSourceText(adobepyAfterEffectsRequireLayer(setTextComp, setTextArgs[1]), setTextArgs[2] || {}));
     }
+    if (request.namespace === "renderQueue" && request.method === "get") {
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueue(adobepyAfterEffectsRequireRenderQueue(app.project)));
+    }
+    if (request.namespace === "renderQueue" && request.method === "getItems") {
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueueItems(adobepyAfterEffectsRequireRenderQueue(app.project)));
+    }
+    if (request.namespace === "renderQueue" && request.method === "getItemByIndex") {
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueueItem(adobepyAfterEffectsFindRenderQueueItem(adobepyAfterEffectsRequireRenderQueue(app.project), (request.args || [])[0]), (request.args || [])[0]));
+    }
+    if (request.namespace === "renderQueue" && request.method === "addComposition") {
+      return adobepyResult(request.id, adobepyAfterEffectsAddCompositionToRenderQueue(app.project, (request.args || [])[0] || {}));
+    }
+    if (request.namespace === "renderQueue" && request.method === "queueSelectedCompositions") {
+      return adobepyResult(request.id, adobepyAfterEffectsQueueSelectedCompositions(app.project, (request.args || [])[0] || {}));
+    }
+    if (request.namespace === "renderQueue" && request.method === "render") {
+      var renderQueue = adobepyAfterEffectsRequireRenderQueue(app.project);
+      if (typeof renderQueue.render !== "function") throw new Error("After Effects RenderQueue.render unavailable");
+      renderQueue.render();
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueue(renderQueue));
+    }
+    if (request.namespace === "renderQueue" && request.method === "pauseRendering") {
+      var pauseQueue = adobepyAfterEffectsRequireRenderQueue(app.project);
+      if (typeof pauseQueue.pauseRendering !== "function") throw new Error("After Effects RenderQueue.pauseRendering unavailable");
+      pauseQueue.pauseRendering(Boolean((request.args || [])[0]));
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueue(pauseQueue));
+    }
+    if (request.namespace === "renderQueue" && request.method === "stopRendering") {
+      var stopQueue = adobepyAfterEffectsRequireRenderQueue(app.project);
+      if (typeof stopQueue.stopRendering !== "function") throw new Error("After Effects RenderQueue.stopRendering unavailable");
+      stopQueue.stopRendering();
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueue(stopQueue));
+    }
+    if (request.namespace === "renderQueue" && request.method === "showWindow") {
+      var showQueue = adobepyAfterEffectsRequireRenderQueue(app.project);
+      if (typeof showQueue.showWindow !== "function") throw new Error("After Effects RenderQueue.showWindow unavailable");
+      showQueue.showWindow(Boolean((request.args || [])[0]));
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueue(showQueue));
+    }
+    if (request.namespace === "renderQueue" && request.method === "queueInAME") {
+      var ameQueue = adobepyAfterEffectsRequireRenderQueue(app.project);
+      if (typeof ameQueue.queueInAME !== "function") throw new Error("After Effects RenderQueue.queueInAME unavailable");
+      ameQueue.queueInAME(Boolean((request.args || [])[0]));
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueue(ameQueue));
+    }
+    if (request.namespace === "renderQueue" && request.method === "setQueueNotify") {
+      var notifyQueue = adobepyAfterEffectsRequireRenderQueue(app.project);
+      notifyQueue.queueNotify = Boolean((request.args || [])[0]);
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueue(notifyQueue));
+    }
+    if (request.namespace === "renderQueueItem" && request.method === "applyTemplate") {
+      var applyRqArgs = request.args || [];
+      return adobepyResult(request.id, adobepyAfterEffectsApplyRenderQueueItemTemplate(adobepyAfterEffectsRequireRenderQueue(app.project), applyRqArgs[0], String(applyRqArgs[1] || "")));
+    }
+    if (request.namespace === "renderQueueItem" && request.method === "setSettings") {
+      var rqSettingsArgs = request.args || [];
+      return adobepyResult(request.id, adobepyAfterEffectsSetRenderQueueItemSettings(adobepyAfterEffectsRequireRenderQueue(app.project), rqSettingsArgs[0], rqSettingsArgs[1] || {}));
+    }
+    if (request.namespace === "renderQueueItem" && request.method === "setRender") {
+      var rqRenderArgs = request.args || [];
+      var rqRenderItem = adobepyAfterEffectsRequireRenderQueueItem(adobepyAfterEffectsRequireRenderQueue(app.project), rqRenderArgs[0]);
+      rqRenderItem.render = Boolean(rqRenderArgs[1]);
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueueItem(rqRenderItem, rqRenderArgs[0]));
+    }
+    if (request.namespace === "renderQueueItem" && request.method === "setQueueItemNotify") {
+      var rqNotifyArgs = request.args || [];
+      var rqNotifyItem = adobepyAfterEffectsRequireRenderQueueItem(adobepyAfterEffectsRequireRenderQueue(app.project), rqNotifyArgs[0]);
+      rqNotifyItem.queueItemNotify = Boolean(rqNotifyArgs[1]);
+      return adobepyResult(request.id, adobepyAfterEffectsRenderQueueItem(rqNotifyItem, rqNotifyArgs[0]));
+    }
+    if (request.namespace === "outputModule" && request.method === "getModules") {
+      var outputModulesArgs = request.args || [];
+      return adobepyResult(request.id, adobepyAfterEffectsOutputModules(adobepyAfterEffectsRequireRenderQueueItem(adobepyAfterEffectsRequireRenderQueue(app.project), outputModulesArgs[0])));
+    }
+    if (request.namespace === "outputModule" && request.method === "getByIndex") {
+      var outputByIndexArgs = request.args || [];
+      var outputByIndexItem = adobepyAfterEffectsRequireRenderQueueItem(adobepyAfterEffectsRequireRenderQueue(app.project), outputByIndexArgs[0]);
+      return adobepyResult(request.id, adobepyAfterEffectsOutputModule(adobepyAfterEffectsFindOutputModule(outputByIndexItem, outputByIndexArgs[1]), outputByIndexItem, outputByIndexArgs[0], outputByIndexArgs[1]));
+    }
+    if (request.namespace === "outputModule" && request.method === "applyTemplate") {
+      var outputTemplateArgs = request.args || [];
+      return adobepyResult(request.id, adobepyAfterEffectsApplyOutputModuleTemplate(adobepyAfterEffectsRequireRenderQueue(app.project), outputTemplateArgs[0], outputTemplateArgs[1], String(outputTemplateArgs[2] || "")));
+    }
+    if (request.namespace === "outputModule" && request.method === "setSettings") {
+      var outputSettingsArgs = request.args || [];
+      return adobepyResult(request.id, adobepyAfterEffectsSetOutputModuleSettings(adobepyAfterEffectsRequireRenderQueue(app.project), outputSettingsArgs[0], outputSettingsArgs[1], outputSettingsArgs[2] || {}));
+    }
+    if (request.namespace === "outputModule" && request.method === "setOutputPath") {
+      var outputPathArgs = request.args || [];
+      return adobepyResult(request.id, adobepyAfterEffectsSetOutputModulePath(adobepyAfterEffectsRequireRenderQueue(app.project), outputPathArgs[0], outputPathArgs[1], String(outputPathArgs[2] || "")));
+    }
+    if (request.namespace === "outputModule" && request.method === "saveAsTemplate") {
+      var outputSaveArgs = request.args || [];
+      return adobepyResult(request.id, adobepyAfterEffectsSaveOutputModuleTemplate(adobepyAfterEffectsRequireRenderQueue(app.project), outputSaveArgs[0], outputSaveArgs[1], String(outputSaveArgs[2] || "")));
+    }
     if (request.namespace === "raw" && request.method === "evalExtendScript") {
       return adobepyResult(request.id, eval((request.args || [])[0]));
     }
@@ -384,6 +479,265 @@ function adobepyAfterEffectsTextDocument(doc) {
   };
 }
 
+function adobepyAfterEffectsRequireRenderQueue(project) {
+  var queue = project ? adobepySafeValue(project, "renderQueue") : null;
+  if (!queue) throw new Error("After Effects render queue unavailable");
+  return queue;
+}
+
+function adobepyAfterEffectsRenderQueue(queue) {
+  if (!queue) return null;
+  return {
+    numItems: adobepyNumberOrNull(adobepySafeValue(queue, "numItems")) || adobepyAfterEffectsRenderQueueItems(queue).length,
+    canQueueInAME: adobepyBooleanOrNull(adobepySafeValue(queue, "canQueueInAME")),
+    queueNotify: adobepyBooleanOrNull(adobepySafeValue(queue, "queueNotify")),
+    rendering: adobepyBooleanOrNull(adobepySafeValue(queue, "rendering")),
+    typename: "RenderQueue"
+  };
+}
+
+function adobepyAfterEffectsRenderQueueItems(queue) {
+  var result = [];
+  var count = Number(adobepySafeValue(queue, "numItems") || 0);
+  for (var index = 1; index <= count; index += 1) {
+    var item = adobepyAfterEffectsFindRenderQueueItem(queue, index);
+    if (item) result.push(adobepyAfterEffectsRenderQueueItem(item, index));
+  }
+  return result;
+}
+
+function adobepyAfterEffectsFindRenderQueueItem(queue, idOrIndex) {
+  if (!queue) return null;
+  var directIndex = Number(idOrIndex);
+  if (!isNaN(directIndex)) {
+    if (typeof queue.item === "function") return queue.item(directIndex);
+    var directItems = adobepySafeValue(queue, "items");
+    if (directItems && typeof directItems.item === "function") return directItems.item(directIndex);
+    if (directItems && directItems[directIndex - 1]) return directItems[directIndex - 1];
+  }
+  var count = Number(adobepySafeValue(queue, "numItems") || 0);
+  for (var index = 1; index <= count; index += 1) {
+    var item = adobepyAfterEffectsFindRenderQueueItem(queue, index);
+    var comp = adobepySafeValue(item, "comp");
+    var values = [adobepySafeValue(item, "id"), adobepySafeValue(item, "index"), comp ? adobepySafeValue(comp, "id") : null, comp ? adobepySafeValue(comp, "name") : null];
+    for (var valueIndex = 0; valueIndex < values.length; valueIndex += 1) {
+      if (String(values[valueIndex]) === String(idOrIndex)) return item;
+    }
+  }
+  return null;
+}
+
+function adobepyAfterEffectsRequireRenderQueueItem(queue, idOrIndex) {
+  var item = adobepyAfterEffectsFindRenderQueueItem(queue, idOrIndex);
+  if (!item) throw new Error("After Effects render queue item unavailable");
+  return item;
+}
+
+function adobepyAfterEffectsRenderQueueItem(item, index) {
+  if (!item) return null;
+  var comp = adobepySafeValue(item, "comp");
+  return {
+    id: adobepySafeValue(item, "id") || index,
+    index: adobepyNumberOrNull(adobepySafeValue(item, "index")) || adobepyNumberOrNull(index),
+    compId: comp ? adobepySafeValue(comp, "id") : null,
+    compName: comp ? String(adobepySafeValue(comp, "name") || "") : null,
+    status: adobepyStringOrNull(adobepySafeValue(item, "status")),
+    elapsedSeconds: adobepyNumberOrNull(adobepySafeValue(item, "elapsedSeconds")),
+    render: adobepyBooleanOrNull(adobepySafeValue(item, "render")),
+    skipFrames: adobepyNumberOrNull(adobepySafeValue(item, "skipFrames")),
+    queueItemNotify: adobepyBooleanOrNull(adobepySafeValue(item, "queueItemNotify")),
+    timeSpanStart: adobepyNumberOrNull(adobepySafeValue(item, "timeSpanStart")),
+    timeSpanDuration: adobepyNumberOrNull(adobepySafeValue(item, "timeSpanDuration")),
+    numOutputModules: adobepyAfterEffectsOutputModuleCount(item),
+    templates: adobepyArrayOfStrings(adobepySafeValue(item, "templates")),
+    settings: adobepyAfterEffectsGetSettings(item, "STRING"),
+    typename: "RenderQueueItem"
+  };
+}
+
+function adobepyAfterEffectsAddCompositionToRenderQueue(project, payload) {
+  var queue = adobepyAfterEffectsRequireRenderQueue(project);
+  var compKey = adobepySafeValue(payload, "comp") || adobepySafeValue(payload, "compId") || adobepySafeValue(payload, "compName") || adobepySafeValue(payload, "id") || payload;
+  var comp = adobepyAfterEffectsRequireComp(project, compKey);
+  var items = adobepySafeValue(queue, "items");
+  if (!items || typeof items.add !== "function") throw new Error("After Effects render queue items.add unavailable");
+  var item = items.add(comp);
+  adobepyAfterEffectsConfigureRenderQueueItem(item, payload);
+  return adobepyAfterEffectsRenderQueueItem(item, adobepyAfterEffectsRenderQueueItemIndex(queue, item));
+}
+
+function adobepyAfterEffectsQueueSelectedCompositions(project, payload) {
+  var queue = adobepyAfterEffectsRequireRenderQueue(project);
+  var items = adobepySafeValue(queue, "items");
+  if (!items || typeof items.add !== "function") throw new Error("After Effects render queue items.add unavailable");
+  var result = [];
+  if (!project) return result;
+  for (var index = 1; index <= Number(project.numItems || 0); index += 1) {
+    var item = project.item(index);
+    if (adobepyAfterEffectsItemType(item) === "composition" && Boolean(adobepySafeValue(item, "selected"))) {
+      var queued = items.add(item);
+      adobepyAfterEffectsConfigureRenderQueueItem(queued, payload);
+      result.push(adobepyAfterEffectsRenderQueueItem(queued, adobepyAfterEffectsRenderQueueItemIndex(queue, queued)));
+    }
+  }
+  return result;
+}
+
+function adobepyAfterEffectsConfigureRenderQueueItem(item, payload) {
+  if (!item || !payload) return;
+  var renderTemplate = adobepySafeValue(payload, "renderSettingsTemplate") || adobepySafeValue(payload, "render_settings_template");
+  if (renderTemplate && typeof item.applyTemplate === "function") item.applyTemplate(String(renderTemplate));
+  var settings = adobepySafeValue(payload, "settings");
+  if (settings && typeof item.setSettings === "function") item.setSettings(settings);
+  var outputModuleTemplate = adobepySafeValue(payload, "outputModuleTemplate") || adobepySafeValue(payload, "output_module_template");
+  var outputPath = adobepySafeValue(payload, "outputPath") || adobepySafeValue(payload, "output_path");
+  var outputDirectory = adobepySafeValue(payload, "outputDirectory") || adobepySafeValue(payload, "output_directory");
+  var outputModule = adobepyAfterEffectsFindOutputModule(item, 1);
+  if (outputModuleTemplate && outputModule && typeof outputModule.applyTemplate === "function") outputModule.applyTemplate(String(outputModuleTemplate));
+  if (outputPath && outputModule) adobepyAfterEffectsAssignOutputModulePath(outputModule, String(outputPath));
+  if (!outputPath && outputDirectory && outputModule) adobepyAfterEffectsAssignOutputModuleDirectory(outputModule, String(outputDirectory));
+}
+
+function adobepyAfterEffectsRenderQueueItemIndex(queue, item) {
+  var count = Number(adobepySafeValue(queue, "numItems") || 0);
+  for (var index = 1; index <= count; index += 1) {
+    if (adobepyAfterEffectsFindRenderQueueItem(queue, index) === item) return index;
+  }
+  return null;
+}
+
+function adobepyAfterEffectsApplyRenderQueueItemTemplate(queue, itemKey, templateName) {
+  var item = adobepyAfterEffectsRequireRenderQueueItem(queue, itemKey);
+  if (!templateName || typeof item.applyTemplate !== "function") throw new Error("After Effects RenderQueueItem.applyTemplate unavailable");
+  item.applyTemplate(templateName);
+  return adobepyAfterEffectsRenderQueueItem(item, itemKey);
+}
+
+function adobepyAfterEffectsSetRenderQueueItemSettings(queue, itemKey, settings) {
+  var item = adobepyAfterEffectsRequireRenderQueueItem(queue, itemKey);
+  if (typeof item.setSettings !== "function") throw new Error("After Effects RenderQueueItem.setSettings unavailable");
+  item.setSettings(settings || {});
+  return adobepyAfterEffectsRenderQueueItem(item, itemKey);
+}
+
+function adobepyAfterEffectsOutputModules(item) {
+  var result = [];
+  var count = adobepyAfterEffectsOutputModuleCount(item);
+  for (var index = 1; index <= count; index += 1) {
+    var outputModule = adobepyAfterEffectsFindOutputModule(item, index);
+    if (outputModule) result.push(adobepyAfterEffectsOutputModule(outputModule, item, adobepySafeValue(item, "index") || null, index));
+  }
+  return result;
+}
+
+function adobepyAfterEffectsOutputModuleCount(item) {
+  var direct = adobepyNumberOrNull(adobepySafeValue(item, "numOutputModules"));
+  if (direct !== null) return direct;
+  return adobepyCollectionLength(adobepySafeValue(item, "outputModules"));
+}
+
+function adobepyAfterEffectsFindOutputModule(item, index) {
+  if (!item) return null;
+  var number = Number(index || 1);
+  if (typeof item.outputModule === "function") return item.outputModule(number);
+  var modules = adobepySafeValue(item, "outputModules");
+  if (modules && typeof modules.item === "function") return modules.item(number);
+  if (modules && modules[number - 1]) return modules[number - 1];
+  return null;
+}
+
+function adobepyAfterEffectsRequireOutputModule(item, index) {
+  var outputModule = adobepyAfterEffectsFindOutputModule(item, index);
+  if (!outputModule) throw new Error("After Effects output module unavailable");
+  return outputModule;
+}
+
+function adobepyAfterEffectsOutputModule(outputModule, item, itemIndex, index) {
+  if (!outputModule) return null;
+  var file = adobepySafeValue(outputModule, "file");
+  var filePath = file ? String(adobepySafeValue(file, "fsName") || adobepySafeValue(file, "fullName") || "") : null;
+  return {
+    itemIndex: adobepyNumberOrNull(itemIndex) || adobepyNumberOrNull(adobepySafeValue(item, "index")),
+    index: adobepyNumberOrNull(index),
+    name: String(adobepySafeValue(outputModule, "name") || ""),
+    filePath: filePath,
+    outputPath: filePath,
+    includeSourceXMP: adobepyBooleanOrNull(adobepySafeValue(outputModule, "includeSourceXMP")),
+    postRenderAction: adobepyStringOrNull(adobepySafeValue(outputModule, "postRenderAction")),
+    templates: adobepyArrayOfStrings(adobepySafeValue(outputModule, "templates")),
+    settings: adobepyAfterEffectsGetSettings(outputModule, "STRING"),
+    typename: "OutputModule"
+  };
+}
+
+function adobepyAfterEffectsApplyOutputModuleTemplate(queue, itemKey, outputModuleIndex, templateName) {
+  var item = adobepyAfterEffectsRequireRenderQueueItem(queue, itemKey);
+  var outputModule = adobepyAfterEffectsRequireOutputModule(item, outputModuleIndex);
+  if (!templateName || typeof outputModule.applyTemplate !== "function") throw new Error("After Effects OutputModule.applyTemplate unavailable");
+  outputModule.applyTemplate(templateName);
+  return adobepyAfterEffectsOutputModule(adobepyAfterEffectsFindOutputModule(item, outputModuleIndex), item, itemKey, outputModuleIndex);
+}
+
+function adobepyAfterEffectsSetOutputModuleSettings(queue, itemKey, outputModuleIndex, settings) {
+  var item = adobepyAfterEffectsRequireRenderQueueItem(queue, itemKey);
+  var outputModule = adobepyAfterEffectsRequireOutputModule(item, outputModuleIndex);
+  if (typeof outputModule.setSettings !== "function") throw new Error("After Effects OutputModule.setSettings unavailable");
+  outputModule.setSettings(settings || {});
+  return adobepyAfterEffectsOutputModule(adobepyAfterEffectsFindOutputModule(item, outputModuleIndex), item, itemKey, outputModuleIndex);
+}
+
+function adobepyAfterEffectsSetOutputModulePath(queue, itemKey, outputModuleIndex, path) {
+  var item = adobepyAfterEffectsRequireRenderQueueItem(queue, itemKey);
+  var outputModule = adobepyAfterEffectsRequireOutputModule(item, outputModuleIndex);
+  adobepyAfterEffectsAssignOutputModulePath(outputModule, path);
+  return adobepyAfterEffectsOutputModule(adobepyAfterEffectsFindOutputModule(item, outputModuleIndex), item, itemKey, outputModuleIndex);
+}
+
+function adobepyAfterEffectsSaveOutputModuleTemplate(queue, itemKey, outputModuleIndex, templateName) {
+  var item = adobepyAfterEffectsRequireRenderQueueItem(queue, itemKey);
+  var outputModule = adobepyAfterEffectsRequireOutputModule(item, outputModuleIndex);
+  if (!templateName || typeof outputModule.saveAsTemplate !== "function") throw new Error("After Effects OutputModule.saveAsTemplate unavailable");
+  outputModule.saveAsTemplate(templateName);
+  return adobepyAfterEffectsOutputModule(adobepyAfterEffectsFindOutputModule(item, outputModuleIndex), item, itemKey, outputModuleIndex);
+}
+
+function adobepyAfterEffectsAssignOutputModulePath(outputModule, path) {
+  if (!path) return;
+  if (typeof File === "function") {
+    outputModule.file = new File(path);
+  } else {
+    outputModule.file = { fsName: path, fullName: path, name: adobepyBasename(path) };
+  }
+}
+
+function adobepyAfterEffectsAssignOutputModuleDirectory(outputModule, directory) {
+  var file = adobepySafeValue(outputModule, "file");
+  var name = file ? String(adobepySafeValue(file, "name") || adobepyBasename(String(adobepySafeValue(file, "fsName") || ""))) : "";
+  if (!name) return;
+  var separator = directory.indexOf("\\") >= 0 ? "\\" : "/";
+  var path = directory.replace(/[\\\/]$/, "") + separator + name;
+  adobepyAfterEffectsAssignOutputModulePath(outputModule, path);
+}
+
+function adobepyAfterEffectsGetSettings(object, formatName) {
+  if (!object || typeof object.getSettings !== "function") return null;
+  try {
+    return object.getSettings(adobepyAfterEffectsSettingsFormat(formatName));
+  } catch (error) {
+    try {
+      return object.getSettings();
+    } catch (ignored) {
+      return null;
+    }
+  }
+}
+
+function adobepyAfterEffectsSettingsFormat(formatName) {
+  var name = String(formatName || "STRING");
+  if (typeof GetSettingsFormat !== "undefined" && typeof GetSettingsFormat[name] !== "undefined") return GetSettingsFormat[name];
+  return name;
+}
+
 function adobepyPropertyGroup(object, name) {
   if (!object || typeof object.property !== "function") return null;
   try {
@@ -427,6 +781,35 @@ function adobepyBooleanOrNull(value) {
 function adobepyStringOrNull(value) {
   if (typeof value === "undefined" || value === null) return null;
   return String(value);
+}
+
+function adobepyArrayOfStrings(value) {
+  if (!value) return [];
+  var result = [];
+  var length = adobepyCollectionLength(value);
+  for (var index = 0; index < length; index += 1) {
+    var item = value[index];
+    if (typeof item === "undefined" && typeof value.item === "function") item = value.item(index + 1);
+    if (typeof item !== "undefined" && item !== null) result.push(String(item));
+  }
+  return result;
+}
+
+function adobepyCollectionLength(value) {
+  if (!value) return 0;
+  var direct = adobepyNumberOrNull(adobepySafeValue(value, "length"));
+  if (direct !== null) return direct;
+  direct = adobepyNumberOrNull(adobepySafeValue(value, "numItems"));
+  if (direct !== null) return direct;
+  direct = adobepyNumberOrNull(adobepySafeValue(value, "numProperties"));
+  if (direct !== null) return direct;
+  return 0;
+}
+
+function adobepyBasename(path) {
+  var normalized = String(path || "").replace(/\\/g, "/");
+  var parts = normalized.split("/");
+  return parts.length ? parts[parts.length - 1] : normalized;
 }
 
 function adobepyResult(id, value) {

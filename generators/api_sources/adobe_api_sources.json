@@ -253,7 +253,7 @@
       "runtimeModule": "extendscript",
       "entryPoint": "app",
       "ir": "generators/ir/after-effects-mvp.json",
-      "trackedBy": [5, 8, 18, 19],
+      "trackedBy": [5, 8, 18, 19, 20],
       "officialDocs": [
         {
           "name": "After Effects scripts",
@@ -298,6 +298,26 @@
         {
           "name": "After Effects TextDocument object",
           "url": "https://ae-scripting.docsforadobe.dev/text/textdocument/"
+        },
+        {
+          "name": "After Effects RenderQueue object",
+          "url": "https://ae-scripting.docsforadobe.dev/renderqueue/renderqueue/"
+        },
+        {
+          "name": "After Effects RQItemCollection object",
+          "url": "https://ae-scripting.docsforadobe.dev/renderqueue/rqitemcollection/"
+        },
+        {
+          "name": "After Effects RenderQueueItem object",
+          "url": "https://ae-scripting.docsforadobe.dev/renderqueue/renderqueueitem/"
+        },
+        {
+          "name": "After Effects OMCollection object",
+          "url": "https://ae-scripting.docsforadobe.dev/renderqueue/omcollection/"
+        },
+        {
+          "name": "After Effects OutputModule object",
+          "url": "https://ae-scripting.docsforadobe.dev/renderqueue/outputmodule/"
         }
       ],
       "secondaryRefs": [
@@ -348,11 +368,11 @@
         },
         {
           "name": "Render queue and output modules",
-          "level": "planned",
-          "trackedBy": 8,
-          "docRefs": ["After Effects Scripting Guide mirror"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "level": "mvp",
+          "trackedBy": 20,
+          "docRefs": ["After Effects RenderQueue object", "After Effects RQItemCollection object", "After Effects RenderQueueItem object", "After Effects OMCollection object", "After Effects OutputModule object"],
+          "irNamespaces": ["renderQueue", "renderQueueItem", "outputModule"],
+          "facadeObjects": ["RenderQueueProxy", "RenderQueueItemProxy", "OutputModuleProxy"]
         }
       ]
     },

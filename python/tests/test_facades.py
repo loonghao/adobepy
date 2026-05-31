@@ -516,6 +516,95 @@ class CapturingClient:
                 return source_text if args[1] in {11, "11", "Title"} else None
             if method == "setSourceText":
                 return {**source_text, **args[2]}
+        if host == "after-effects" and namespace == "renderQueue":
+            render_queue = {
+                "numItems": 1,
+                "canQueueInAME": True,
+                "queueNotify": False,
+                "rendering": False,
+                "typename": "RenderQueue",
+            }
+            render_item = {
+                "id": "rq-1",
+                "index": 1,
+                "compId": 1,
+                "compName": "Main Comp",
+                "status": "QUEUED",
+                "elapsedSeconds": None,
+                "render": True,
+                "skipFrames": 0,
+                "queueItemNotify": False,
+                "timeSpanStart": 0,
+                "timeSpanDuration": 10,
+                "numOutputModules": 1,
+                "templates": ["Best Settings"],
+                "settings": {"Quality": "Best"},
+                "typename": "RenderQueueItem",
+            }
+            if method == "get":
+                return render_queue
+            if method == "getItems":
+                return [render_item]
+            if method == "getItemByIndex":
+                return render_item if args[0] == 1 else None
+            if method == "addComposition":
+                return {**render_item, "compId": args[0]["comp"], "settings": args[0].get("settings") or render_item["settings"]}
+            if method == "queueSelectedCompositions":
+                return [render_item]
+            if method in {"render", "pauseRendering", "stopRendering", "showWindow", "queueInAME"}:
+                return render_queue
+            if method == "setQueueNotify":
+                return {**render_queue, "queueNotify": args[0]}
+        if host == "after-effects" and namespace == "renderQueueItem":
+            render_item = {
+                "id": "rq-1",
+                "index": args[0],
+                "compId": 1,
+                "compName": "Main Comp",
+                "status": "QUEUED",
+                "render": True,
+                "skipFrames": 0,
+                "queueItemNotify": False,
+                "timeSpanStart": 0,
+                "timeSpanDuration": 10,
+                "numOutputModules": 1,
+                "templates": ["Best Settings"],
+                "settings": {"Quality": "Best"},
+                "typename": "RenderQueueItem",
+            }
+            if method == "applyTemplate":
+                return {**render_item, "settings": {"template": args[1]}}
+            if method == "setSettings":
+                return {**render_item, "settings": args[1]}
+            if method == "setRender":
+                return {**render_item, "render": args[1]}
+            if method == "setQueueItemNotify":
+                return {**render_item, "queueItemNotify": args[1]}
+        if host == "after-effects" and namespace == "outputModule":
+            output_module = {
+                "itemIndex": args[0] if args else 1,
+                "index": args[1] if len(args) > 1 else 1,
+                "name": "Lossless",
+                "filePath": "C:/renders/Main Comp.mov",
+                "outputPath": "C:/renders/Main Comp.mov",
+                "includeSourceXMP": True,
+                "postRenderAction": "NONE",
+                "templates": ["Lossless", "H.264"],
+                "settings": {"Format": "QuickTime"},
+                "typename": "OutputModule",
+            }
+            if method == "getModules":
+                return [{**output_module, "index": 1}]
+            if method == "getByIndex":
+                return output_module if args[1] == 1 else None
+            if method == "applyTemplate":
+                return {**output_module, "name": args[2]}
+            if method == "setSettings":
+                return {**output_module, "settings": args[2]}
+            if method == "setOutputPath":
+                return {**output_module, "filePath": args[2], "outputPath": args[2]}
+            if method == "saveAsTemplate":
+                return {**output_module, "templates": [*output_module["templates"], args[2]]}
         if host == "premiere" and namespace == "encoder":
             if method == "getManager":
                 return {"isAMEInstalled": True, "typename": "EncoderManager"}
@@ -1050,6 +1139,80 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(layer.set_source_text("World", fontSize=36, command_name="Set Text").text, "World")
         self.assertEqual(ae_client.calls[-1]["options"]["commandName"], "Set Text")
         self.assertEqual(layer.setSourceText("Again", commandName="Set Text 2").fontSize, 48)
+        render_queue = ae.project.render_queue
+        self.assertEqual(render_queue.num_items, 1)
+        self.assertEqual(render_queue.numItems, 1)
+        self.assertTrue(render_queue.can_queue_in_ame)
+        self.assertTrue(render_queue.can_queue_in_a_m_e)
+        self.assertTrue(render_queue.canQueueInAME)
+        self.assertTrue(render_queue.canQueueInAme)
+        self.assertFalse(render_queue.queue_notify)
+        self.assertFalse(render_queue.queueNotify)
+        self.assertFalse(render_queue.rendering)
+        self.assertEqual(render_queue.typename, "RenderQueue")
+        render_item = render_queue.items[0]
+        self.assertEqual(render_item.id, "rq-1")
+        self.assertEqual(render_item.index, 1)
+        self.assertEqual(render_item.comp_id, 1)
+        self.assertEqual(render_item.compId, 1)
+        self.assertEqual(render_item.comp_name, "Main Comp")
+        self.assertEqual(render_item.compName, "Main Comp")
+        self.assertEqual(render_item.status, "QUEUED")
+        self.assertTrue(render_item.render)
+        self.assertEqual(render_item.skip_frames, 0)
+        self.assertEqual(render_item.skipFrames, 0)
+        self.assertFalse(render_item.queue_item_notify)
+        self.assertFalse(render_item.queueItemNotify)
+        self.assertEqual(render_item.time_span_start, 0)
+        self.assertEqual(render_item.timeSpanStart, 0)
+        self.assertEqual(render_item.time_span_duration, 10)
+        self.assertEqual(render_item.timeSpanDuration, 10)
+        self.assertEqual(render_item.num_output_modules, 1)
+        self.assertEqual(render_item.numOutputModules, 1)
+        self.assertEqual(render_item.templates, ["Best Settings"])
+        self.assertEqual(render_item.settings["Quality"], "Best")
+        self.assertEqual(render_queue.get_item_by_index(1).compName, "Main Comp")
+        self.assertEqual(render_queue.getItemByIndex(1).status, "QUEUED")
+        self.assertEqual(render_queue.item(1).typename, "RenderQueueItem")
+        output_module = render_item.output_modules[0]
+        self.assertEqual(output_module.item_index, 1)
+        self.assertEqual(output_module.itemIndex, 1)
+        self.assertEqual(output_module.index, 1)
+        self.assertEqual(output_module.name, "Lossless")
+        self.assertEqual(output_module.file_path, "C:/renders/Main Comp.mov")
+        self.assertEqual(output_module.filePath, "C:/renders/Main Comp.mov")
+        self.assertEqual(output_module.output_path, "C:/renders/Main Comp.mov")
+        self.assertEqual(output_module.outputPath, "C:/renders/Main Comp.mov")
+        self.assertTrue(output_module.include_source_xmp)
+        self.assertTrue(output_module.include_source_x_m_p)
+        self.assertTrue(output_module.includeSourceXMP)
+        self.assertTrue(output_module.includeSourceXmp)
+        self.assertEqual(output_module.post_render_action, "NONE")
+        self.assertEqual(output_module.postRenderAction, "NONE")
+        self.assertEqual(output_module.templates[0], "Lossless")
+        self.assertEqual(output_module.settings["Format"], "QuickTime")
+        self.assertEqual(output_module.typename, "OutputModule")
+        self.assertEqual(render_item.output_module(1).outputPath, "C:/renders/Main Comp.mov")
+        self.assertEqual(render_item.outputModule(1).name, "Lossless")
+        self.assertEqual(render_queue.queue_selected_compositions(command_name="Queue selected")[0].compName, "Main Comp")
+        self.assertEqual(ae_client.calls[-1]["options"]["commandName"], "Queue selected")
+        self.assertEqual(render_queue.queueSelectedCompositions(commandName="Queue selected 2")[0].status, "QUEUED")
+        self.assertEqual(render_queue.add_composition(comp, output_path="C:/renders/new.mov", Crop=True).compId, 1)
+        self.assertEqual(ae_client.calls[-1]["args"][0]["settings"]["Crop"], True)
+        self.assertEqual(comp.add_to_render_queue(output_path="C:/renders/comp.mov", command_name="Add comp").compName, "Main Comp")
+        self.assertEqual(ae_client.calls[-1]["options"]["commandName"], "Add comp")
+        self.assertEqual(comp.addToRenderQueue(outputPath="C:/renders/comp2.mov").compId, 1)
+        self.assertEqual(render_item.apply_template("Draft").settings["template"], "Draft")
+        self.assertFalse(render_item.set_render(False).render)
+        self.assertTrue(render_item.setQueueItemNotify(True).queueItemNotify)
+        self.assertTrue(render_queue.set_queue_notify(True).queueNotify)
+        self.assertEqual(output_module.apply_template("H.264").name, "H.264")
+        self.assertEqual(output_module.set_settings({"Crop": True}, command_name="Output settings").settings["Crop"], True)
+        self.assertEqual(ae_client.calls[-1]["options"]["commandName"], "Output settings")
+        self.assertEqual(output_module.setOutputPath("C:/renders/updated.mov").outputPath, "C:/renders/updated.mov")
+        self.assertEqual(output_module.save_as_template("Review").templates[-1], "Review")
+        self.assertFalse(render_queue.queue_in_ame(False).rendering)
+        self.assertFalse(render_queue.render(command_name="Render now").rendering)
 
         illustrator = Illustrator(client=CapturingClient())
         self.assertEqual(illustrator.version, "28.2")

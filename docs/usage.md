@@ -76,11 +76,22 @@ for layer in comp.layers:
 
 text = comp.get_layer_by_id(11).source_text
 comp.selected_layers[0].set_source_text("Updated title")
+
+render_queue = app.project.render_queue
+queued = render_queue.queue_selected_compositions(
+    output_directory="C:/renders/review",
+    command_name="Queue selected comps",
+)
+
+item = queued[0] if queued else comp.add_to_render_queue(output_path="C:/renders/main.mov")
+module = item.output_module(1)
+module.apply_template("Lossless")
+module.set_output_path("C:/renders/main.mov")
 ```
 
 Use `adobe.raw.RawSession("after-effects").eval_extendscript(...)` for APIs
-outside the typed composition/project-item facade, such as deep layer/property
-mutation before those namespaces are added.
+outside the typed composition/project-item/render-queue facade, such as deep
+layer/property mutation before those namespaces are added.
 
 ## Bridges
 

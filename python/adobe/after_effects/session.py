@@ -57,6 +57,14 @@ class AfterEffects(AfterEffectsSession):
     def selectedItems(self) -> list["ProjectItemProxy"]:
         return self.selected_items
 
+    @property
+    def render_queue(self) -> "RenderQueueProxy":
+        return self.app.render_queue
+
+    @property
+    def renderQueue(self) -> "RenderQueueProxy":
+        return self.render_queue
+
 
 class AfterEffectsApp:
     def __init__(self, session: AfterEffectsSession) -> None:
@@ -92,6 +100,15 @@ class AfterEffectsApp:
     @property
     def selectedItems(self) -> list["ProjectItemProxy"]:
         return self.selected_items
+
+    @property
+    def render_queue(self) -> "RenderQueueProxy":
+        payload = self._session.invoke("renderQueue", "get")
+        return RenderQueueProxy(self._session, payload or {})
+
+    @property
+    def renderQueue(self) -> "RenderQueueProxy":
+        return self.render_queue
 
 
 @dataclass
@@ -156,6 +173,15 @@ class ProjectProxy:
     @property
     def selectedItems(self) -> list["ProjectItemProxy"]:
         return self.selected_items
+
+    @property
+    def render_queue(self) -> "RenderQueueProxy":
+        payload = self._session.invoke("renderQueue", "get")
+        return RenderQueueProxy(self._session, payload or {})
+
+    @property
+    def renderQueue(self) -> "RenderQueueProxy":
+        return self.render_queue
 
     def get_item_by_id(self, item_id: Any) -> "ProjectItemProxy | None":
         payload = self._session.invoke("item", "getById", item_id)
@@ -414,6 +440,49 @@ class CompositionProxy:
 
     def getLayerById(self, layerId: Any) -> "LayerProxy | None":
         return self.get_layer_by_id(layerId)
+
+    def add_to_render_queue(
+        self,
+        *,
+        render_settings_template: str | None = None,
+        output_module_template: str | None = None,
+        output_path: str | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+        **settings: Any,
+    ) -> "RenderQueueItemProxy":
+        payload = self._session.invoke(
+            "renderQueue",
+            "addComposition",
+            {
+                "comp": self._comp_key,
+                "renderSettingsTemplate": render_settings_template,
+                "outputModuleTemplate": output_module_template,
+                "outputPath": output_path,
+                "settings": settings or None,
+            },
+            options=_modal_options(command_name=command_name, default_command_name="Add composition to render queue", timeout_ms=timeout_ms),
+        )
+        return RenderQueueItemProxy(self._session, payload or {})
+
+    def addToRenderQueue(
+        self,
+        *,
+        renderSettingsTemplate: str | None = None,
+        outputModuleTemplate: str | None = None,
+        outputPath: str | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+        **settings: Any,
+    ) -> "RenderQueueItemProxy":
+        return self.add_to_render_queue(
+            render_settings_template=renderSettingsTemplate,
+            output_module_template=outputModuleTemplate,
+            output_path=outputPath,
+            command_name=commandName,
+            timeout_ms=timeoutMs,
+            **settings,
+        )
 
     @property
     def typename(self) -> str | None:
@@ -969,6 +1038,593 @@ class SourceTextProxy:
         return self._payload.get("typename")
 
 
+@dataclass
+class RenderQueueProxy:
+    _session: AfterEffectsSession
+    _payload: dict[str, Any]
+
+    @property
+    def num_items(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "numItems", "num_items", "itemCount", "item_count"))
+
+    @property
+    def numItems(self) -> int | None:
+        return self.num_items
+
+    @property
+    def item_count(self) -> int | None:
+        return self.num_items
+
+    @property
+    def itemCount(self) -> int | None:
+        return self.num_items
+
+    @property
+    def can_queue_in_ame(self) -> bool | None:
+        return _optional_bool(_payload_value(self._payload, "canQueueInAME", "can_queue_in_ame"))
+
+    @property
+    def can_queue_in_a_m_e(self) -> bool | None:
+        return self.can_queue_in_ame
+
+    @property
+    def canQueueInAME(self) -> bool | None:
+        return self.can_queue_in_ame
+
+    @property
+    def canQueueInAme(self) -> bool | None:
+        return self.can_queue_in_ame
+
+    @property
+    def queue_notify(self) -> bool | None:
+        return _optional_bool(_payload_value(self._payload, "queueNotify", "queue_notify"))
+
+    @property
+    def queueNotify(self) -> bool | None:
+        return self.queue_notify
+
+    @property
+    def rendering(self) -> bool | None:
+        return _optional_bool(self._payload.get("rendering"))
+
+    @property
+    def items(self) -> list["RenderQueueItemProxy"]:
+        payload = self._session.invoke("renderQueue", "getItems")
+        return [RenderQueueItemProxy(self._session, item) for item in payload or []]
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+    def refresh(self) -> "RenderQueueProxy":
+        payload = self._session.invoke("renderQueue", "get")
+        return RenderQueueProxy(self._session, payload or {})
+
+    def get_item_by_index(self, index: int) -> "RenderQueueItemProxy | None":
+        payload = self._session.invoke("renderQueue", "getItemByIndex", index)
+        return RenderQueueItemProxy(self._session, payload) if payload else None
+
+    def getItemByIndex(self, index: int) -> "RenderQueueItemProxy | None":
+        return self.get_item_by_index(index)
+
+    def item(self, index: int) -> "RenderQueueItemProxy | None":
+        return self.get_item_by_index(index)
+
+    def add_composition(
+        self,
+        comp: Any,
+        *,
+        render_settings_template: str | None = None,
+        output_module_template: str | None = None,
+        output_path: str | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+        **settings: Any,
+    ) -> "RenderQueueItemProxy":
+        payload = self._session.invoke(
+            "renderQueue",
+            "addComposition",
+            {
+                "comp": _facade_key(comp),
+                "renderSettingsTemplate": render_settings_template,
+                "outputModuleTemplate": output_module_template,
+                "outputPath": output_path,
+                "settings": settings or None,
+            },
+            options=_modal_options(command_name=command_name, default_command_name="Add composition to render queue", timeout_ms=timeout_ms),
+        )
+        return RenderQueueItemProxy(self._session, payload or {})
+
+    def addComposition(
+        self,
+        comp: Any,
+        *,
+        renderSettingsTemplate: str | None = None,
+        outputModuleTemplate: str | None = None,
+        outputPath: str | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+        **settings: Any,
+    ) -> "RenderQueueItemProxy":
+        return self.add_composition(
+            comp,
+            render_settings_template=renderSettingsTemplate,
+            output_module_template=outputModuleTemplate,
+            output_path=outputPath,
+            command_name=commandName,
+            timeout_ms=timeoutMs,
+            **settings,
+        )
+
+    def queue_selected_compositions(
+        self,
+        *,
+        render_settings_template: str | None = None,
+        output_module_template: str | None = None,
+        output_directory: str | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+        **settings: Any,
+    ) -> list["RenderQueueItemProxy"]:
+        payload = self._session.invoke(
+            "renderQueue",
+            "queueSelectedCompositions",
+            {
+                "renderSettingsTemplate": render_settings_template,
+                "outputModuleTemplate": output_module_template,
+                "outputDirectory": output_directory,
+                "settings": settings or None,
+            },
+            options=_modal_options(command_name=command_name, default_command_name="Queue selected compositions", timeout_ms=timeout_ms),
+        )
+        return [RenderQueueItemProxy(self._session, item) for item in payload or []]
+
+    def queueSelectedCompositions(
+        self,
+        *,
+        renderSettingsTemplate: str | None = None,
+        outputModuleTemplate: str | None = None,
+        outputDirectory: str | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+        **settings: Any,
+    ) -> list["RenderQueueItemProxy"]:
+        return self.queue_selected_compositions(
+            render_settings_template=renderSettingsTemplate,
+            output_module_template=outputModuleTemplate,
+            output_directory=outputDirectory,
+            command_name=commandName,
+            timeout_ms=timeoutMs,
+            **settings,
+        )
+
+    def render_queue(self, *, command_name: str | None = None, timeout_ms: int | None = None) -> "RenderQueueProxy":
+        payload = self._session.invoke(
+            "renderQueue",
+            "render",
+            options=_modal_options(command_name=command_name, default_command_name="Render queue", timeout_ms=timeout_ms),
+        )
+        return RenderQueueProxy(self._session, payload or {})
+
+    def render(self, *, command_name: str | None = None, timeout_ms: int | None = None) -> "RenderQueueProxy":
+        return self.render_queue(command_name=command_name, timeout_ms=timeout_ms)
+
+    def renderQueue(self, *, commandName: str | None = None, timeoutMs: int | None = None) -> "RenderQueueProxy":
+        return self.render_queue(command_name=commandName, timeout_ms=timeoutMs)
+
+    def pause_rendering(self, pause: bool = True, *, command_name: str | None = None, timeout_ms: int | None = None) -> "RenderQueueProxy":
+        payload = self._session.invoke(
+            "renderQueue",
+            "pauseRendering",
+            pause,
+            options=_modal_options(command_name=command_name, default_command_name="Pause render queue", timeout_ms=timeout_ms),
+        )
+        return RenderQueueProxy(self._session, payload or {})
+
+    def pauseRendering(self, pause: bool = True, *, commandName: str | None = None, timeoutMs: int | None = None) -> "RenderQueueProxy":
+        return self.pause_rendering(pause, command_name=commandName, timeout_ms=timeoutMs)
+
+    def stop_rendering(self, *, command_name: str | None = None, timeout_ms: int | None = None) -> "RenderQueueProxy":
+        payload = self._session.invoke(
+            "renderQueue",
+            "stopRendering",
+            options=_modal_options(command_name=command_name, default_command_name="Stop render queue", timeout_ms=timeout_ms),
+        )
+        return RenderQueueProxy(self._session, payload or {})
+
+    def stopRendering(self, *, commandName: str | None = None, timeoutMs: int | None = None) -> "RenderQueueProxy":
+        return self.stop_rendering(command_name=commandName, timeout_ms=timeoutMs)
+
+    def show_window(self, show: bool = True, *, command_name: str | None = None, timeout_ms: int | None = None) -> "RenderQueueProxy":
+        payload = self._session.invoke(
+            "renderQueue",
+            "showWindow",
+            show,
+            options=_modal_options(command_name=command_name, default_command_name="Show render queue", timeout_ms=timeout_ms),
+        )
+        return RenderQueueProxy(self._session, payload or {})
+
+    def showWindow(self, show: bool = True, *, commandName: str | None = None, timeoutMs: int | None = None) -> "RenderQueueProxy":
+        return self.show_window(show, command_name=commandName, timeout_ms=timeoutMs)
+
+    def queue_in_ame(
+        self,
+        render_immediately: bool = False,
+        *,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "RenderQueueProxy":
+        payload = self._session.invoke(
+            "renderQueue",
+            "queueInAME",
+            render_immediately,
+            options=_modal_options(command_name=command_name, default_command_name="Queue in AME", timeout_ms=timeout_ms),
+        )
+        return RenderQueueProxy(self._session, payload or {})
+
+    def queueInAME(
+        self,
+        renderImmediately: bool = False,
+        *,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "RenderQueueProxy":
+        return self.queue_in_ame(renderImmediately, command_name=commandName, timeout_ms=timeoutMs)
+
+    def queue_in_a_m_e(
+        self,
+        render_immediately: bool = False,
+        *,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "RenderQueueProxy":
+        return self.queue_in_ame(render_immediately, command_name=command_name, timeout_ms=timeout_ms)
+
+    def set_queue_notify(self, enabled: bool, *, command_name: str | None = None, timeout_ms: int | None = None) -> "RenderQueueProxy":
+        payload = self._session.invoke(
+            "renderQueue",
+            "setQueueNotify",
+            enabled,
+            options=_modal_options(command_name=command_name, default_command_name="Set render queue notify", timeout_ms=timeout_ms),
+        )
+        return RenderQueueProxy(self._session, payload or {})
+
+    def setQueueNotify(self, enabled: bool, *, commandName: str | None = None, timeoutMs: int | None = None) -> "RenderQueueProxy":
+        return self.set_queue_notify(enabled, command_name=commandName, timeout_ms=timeoutMs)
+
+
+@dataclass
+class RenderQueueItemProxy:
+    _session: AfterEffectsSession
+    _payload: dict[str, Any]
+
+    @property
+    def id(self) -> Any:
+        return self._payload.get("id")
+
+    @property
+    def index(self) -> int | None:
+        return _optional_int(self._payload.get("index"))
+
+    @property
+    def comp_id(self) -> Any:
+        return self._payload.get("compId") or self._payload.get("comp_id")
+
+    @property
+    def compId(self) -> Any:
+        return self.comp_id
+
+    @property
+    def comp_name(self) -> str | None:
+        return self._payload.get("compName") or self._payload.get("comp_name")
+
+    @property
+    def compName(self) -> str | None:
+        return self.comp_name
+
+    @property
+    def status(self) -> str | None:
+        return self._payload.get("status")
+
+    @property
+    def elapsed_seconds(self) -> float | None:
+        return _optional_float(_payload_value(self._payload, "elapsedSeconds", "elapsed_seconds"))
+
+    @property
+    def elapsedSeconds(self) -> float | None:
+        return self.elapsed_seconds
+
+    @property
+    def render(self) -> bool | None:
+        return _optional_bool(self._payload.get("render"))
+
+    @property
+    def skip_frames(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "skipFrames", "skip_frames"))
+
+    @property
+    def skipFrames(self) -> int | None:
+        return self.skip_frames
+
+    @property
+    def queue_item_notify(self) -> bool | None:
+        return _optional_bool(_payload_value(self._payload, "queueItemNotify", "queue_item_notify"))
+
+    @property
+    def queueItemNotify(self) -> bool | None:
+        return self.queue_item_notify
+
+    @property
+    def time_span_start(self) -> float | None:
+        return _optional_float(_payload_value(self._payload, "timeSpanStart", "time_span_start"))
+
+    @property
+    def timeSpanStart(self) -> float | None:
+        return self.time_span_start
+
+    @property
+    def time_span_duration(self) -> float | None:
+        return _optional_float(_payload_value(self._payload, "timeSpanDuration", "time_span_duration"))
+
+    @property
+    def timeSpanDuration(self) -> float | None:
+        return self.time_span_duration
+
+    @property
+    def num_output_modules(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "numOutputModules", "num_output_modules"))
+
+    @property
+    def numOutputModules(self) -> int | None:
+        return self.num_output_modules
+
+    @property
+    def templates(self) -> list[str]:
+        return [str(item) for item in self._payload.get("templates") or []]
+
+    @property
+    def settings(self) -> dict[str, Any] | None:
+        value = self._payload.get("settings")
+        return value if isinstance(value, dict) else None
+
+    @property
+    def output_modules(self) -> list["OutputModuleProxy"]:
+        payload = self._session.invoke("outputModule", "getModules", self._item_key)
+        return [OutputModuleProxy(self._session, item) for item in payload or []]
+
+    @property
+    def outputModules(self) -> list["OutputModuleProxy"]:
+        return self.output_modules
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+    def output_module(self, index: int = 1) -> "OutputModuleProxy | None":
+        payload = self._session.invoke("outputModule", "getByIndex", self._item_key, index)
+        return OutputModuleProxy(self._session, payload) if payload else None
+
+    def outputModule(self, index: int = 1) -> "OutputModuleProxy | None":
+        return self.output_module(index)
+
+    def apply_template(self, name: str, *, command_name: str | None = None, timeout_ms: int | None = None) -> "RenderQueueItemProxy":
+        payload = self._session.invoke(
+            "renderQueueItem",
+            "applyTemplate",
+            self._item_key,
+            name,
+            options=_modal_options(command_name=command_name, default_command_name="Apply render settings template", timeout_ms=timeout_ms),
+        )
+        return RenderQueueItemProxy(self._session, payload or {})
+
+    def applyTemplate(self, name: str, *, commandName: str | None = None, timeoutMs: int | None = None) -> "RenderQueueItemProxy":
+        return self.apply_template(name, command_name=commandName, timeout_ms=timeoutMs)
+
+    def set_settings(
+        self,
+        settings: dict[str, Any] | None = None,
+        *,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+        **kwargs: Any,
+    ) -> "RenderQueueItemProxy":
+        payload_settings = {**(settings or {}), **kwargs}
+        payload = self._session.invoke(
+            "renderQueueItem",
+            "setSettings",
+            self._item_key,
+            payload_settings,
+            options=_modal_options(command_name=command_name, default_command_name="Set render queue item settings", timeout_ms=timeout_ms),
+        )
+        return RenderQueueItemProxy(self._session, payload or {})
+
+    def setSettings(
+        self,
+        settings: dict[str, Any] | None = None,
+        *,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+        **kwargs: Any,
+    ) -> "RenderQueueItemProxy":
+        return self.set_settings(settings, command_name=commandName, timeout_ms=timeoutMs, **kwargs)
+
+    def set_render(self, enabled: bool, *, command_name: str | None = None, timeout_ms: int | None = None) -> "RenderQueueItemProxy":
+        payload = self._session.invoke(
+            "renderQueueItem",
+            "setRender",
+            self._item_key,
+            enabled,
+            options=_modal_options(command_name=command_name, default_command_name="Set render queue item enabled", timeout_ms=timeout_ms),
+        )
+        return RenderQueueItemProxy(self._session, payload or {})
+
+    def setRender(self, enabled: bool, *, commandName: str | None = None, timeoutMs: int | None = None) -> "RenderQueueItemProxy":
+        return self.set_render(enabled, command_name=commandName, timeout_ms=timeoutMs)
+
+    def set_queue_item_notify(self, enabled: bool, *, command_name: str | None = None, timeout_ms: int | None = None) -> "RenderQueueItemProxy":
+        payload = self._session.invoke(
+            "renderQueueItem",
+            "setQueueItemNotify",
+            self._item_key,
+            enabled,
+            options=_modal_options(command_name=command_name, default_command_name="Set render queue item notify", timeout_ms=timeout_ms),
+        )
+        return RenderQueueItemProxy(self._session, payload or {})
+
+    def setQueueItemNotify(self, enabled: bool, *, commandName: str | None = None, timeoutMs: int | None = None) -> "RenderQueueItemProxy":
+        return self.set_queue_item_notify(enabled, command_name=commandName, timeout_ms=timeoutMs)
+
+    @property
+    def _item_key(self) -> Any:
+        return self.index or self.id or self.comp_id or self.comp_name
+
+
+@dataclass
+class OutputModuleProxy:
+    _session: AfterEffectsSession
+    _payload: dict[str, Any]
+
+    @property
+    def item_index(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "itemIndex", "item_index"))
+
+    @property
+    def itemIndex(self) -> int | None:
+        return self.item_index
+
+    @property
+    def index(self) -> int | None:
+        return _optional_int(self._payload.get("index"))
+
+    @property
+    def name(self) -> str | None:
+        return self._payload.get("name")
+
+    @property
+    def file_path(self) -> str | None:
+        return self._payload.get("filePath") or self._payload.get("file_path") or self.output_path
+
+    @property
+    def filePath(self) -> str | None:
+        return self.file_path
+
+    @property
+    def output_path(self) -> str | None:
+        return self._payload.get("outputPath") or self._payload.get("output_path")
+
+    @property
+    def outputPath(self) -> str | None:
+        return self.output_path
+
+    @property
+    def include_source_xmp(self) -> bool | None:
+        return _optional_bool(_payload_value(self._payload, "includeSourceXMP", "include_source_xmp"))
+
+    @property
+    def include_source_x_m_p(self) -> bool | None:
+        return self.include_source_xmp
+
+    @property
+    def includeSourceXMP(self) -> bool | None:
+        return self.include_source_xmp
+
+    @property
+    def includeSourceXmp(self) -> bool | None:
+        return self.include_source_xmp
+
+    @property
+    def post_render_action(self) -> str | None:
+        return self._payload.get("postRenderAction") or self._payload.get("post_render_action")
+
+    @property
+    def postRenderAction(self) -> str | None:
+        return self.post_render_action
+
+    @property
+    def templates(self) -> list[str]:
+        return [str(item) for item in self._payload.get("templates") or []]
+
+    @property
+    def settings(self) -> dict[str, Any] | None:
+        value = self._payload.get("settings")
+        return value if isinstance(value, dict) else None
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+    def apply_template(self, name: str, *, command_name: str | None = None, timeout_ms: int | None = None) -> "OutputModuleProxy":
+        payload = self._session.invoke(
+            "outputModule",
+            "applyTemplate",
+            self.item_index,
+            self.index,
+            name,
+            options=_modal_options(command_name=command_name, default_command_name="Apply output module template", timeout_ms=timeout_ms),
+        )
+        return OutputModuleProxy(self._session, payload or {})
+
+    def applyTemplate(self, name: str, *, commandName: str | None = None, timeoutMs: int | None = None) -> "OutputModuleProxy":
+        return self.apply_template(name, command_name=commandName, timeout_ms=timeoutMs)
+
+    def set_settings(
+        self,
+        settings: dict[str, Any] | None = None,
+        *,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+        **kwargs: Any,
+    ) -> "OutputModuleProxy":
+        payload_settings = {**(settings or {}), **kwargs}
+        payload = self._session.invoke(
+            "outputModule",
+            "setSettings",
+            self.item_index,
+            self.index,
+            payload_settings,
+            options=_modal_options(command_name=command_name, default_command_name="Set output module settings", timeout_ms=timeout_ms),
+        )
+        return OutputModuleProxy(self._session, payload or {})
+
+    def setSettings(
+        self,
+        settings: dict[str, Any] | None = None,
+        *,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+        **kwargs: Any,
+    ) -> "OutputModuleProxy":
+        return self.set_settings(settings, command_name=commandName, timeout_ms=timeoutMs, **kwargs)
+
+    def set_output_path(self, path: str, *, command_name: str | None = None, timeout_ms: int | None = None) -> "OutputModuleProxy":
+        payload = self._session.invoke(
+            "outputModule",
+            "setOutputPath",
+            self.item_index,
+            self.index,
+            path,
+            options=_modal_options(command_name=command_name, default_command_name="Set output path", timeout_ms=timeout_ms),
+        )
+        return OutputModuleProxy(self._session, payload or {})
+
+    def setOutputPath(self, path: str, *, commandName: str | None = None, timeoutMs: int | None = None) -> "OutputModuleProxy":
+        return self.set_output_path(path, command_name=commandName, timeout_ms=timeoutMs)
+
+    def save_as_template(self, name: str, *, command_name: str | None = None, timeout_ms: int | None = None) -> "OutputModuleProxy":
+        payload = self._session.invoke(
+            "outputModule",
+            "saveAsTemplate",
+            self.item_index,
+            self.index,
+            name,
+            options=_modal_options(command_name=command_name, default_command_name="Save output module template", timeout_ms=timeout_ms),
+        )
+        return OutputModuleProxy(self._session, payload or {})
+
+    def saveAsTemplate(self, name: str, *, commandName: str | None = None, timeoutMs: int | None = None) -> "OutputModuleProxy":
+        return self.save_as_template(name, command_name=commandName, timeout_ms=timeoutMs)
+
+
 def connect(
     *,
     broker_url: str | None = None,
@@ -1034,3 +1690,12 @@ def _payload_value(payload: dict[str, Any], *keys: str) -> Any:
         if key in payload:
             return payload[key]
     return None
+
+
+def _facade_key(value: Any) -> Any:
+    for key in ("id", "index", "name"):
+        if hasattr(value, key):
+            candidate = getattr(value, key)
+            if candidate is not None:
+                return candidate
+    return value

@@ -21,9 +21,9 @@ IR, bridge capabilities, Python facade, and Pythonic aliases.
 | Host | Bridge | MVP targets | Planned targets | Coverage | Next targets |
 | --- | --- | ---: | ---: | ---: | --- |
 | Photoshop | UXP | 8 | 0 | 100.0% | none |
-| InDesign | UXP | 4 | 1 | 80.0% | swatches, colors, links, and export/package workflows |
-| Premiere Pro | UXP | 2 | 3 | 40.0% | Sequences, tracks, clips, and markers; project items, media import, and bins; encoder/export workflows |
-| After Effects | CEP/ExtendScript | 2 | 3 | 40.0% | Compositions and footage items; layers, masks, effects, and text; render queue and output modules |
+| InDesign | UXP | 5 | 0 | 100.0% | none |
+| Premiere Pro | UXP | 5 | 0 | 100.0% | none |
+| After Effects | CEP/ExtendScript | 5 | 0 | 100.0% | none |
 | Illustrator | CEP/ExtendScript | 2 | 3 | 40.0% | Artboards, layers, and page items; path items, compound paths, and placed/raster items; text frames, stories, swatches, colors, and export workflows |
 
 ## Coverage Rules

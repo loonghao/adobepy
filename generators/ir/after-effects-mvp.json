@@ -56,6 +56,42 @@
         {"name": "setSourceText", "returns": "SourceText", "mutates": true, "modal": true}
       ]
     },
+    {
+      "name": "renderQueue",
+      "methods": [
+        {"name": "get", "returns": "RenderQueue"},
+        {"name": "getItems", "returns": "list[RenderQueueItem]"},
+        {"name": "getItemByIndex", "returns": "RenderQueueItem | None"},
+        {"name": "addComposition", "returns": "RenderQueueItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "queueSelectedCompositions", "returns": "list[RenderQueueItem]", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "render", "returns": "RenderQueue", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "pauseRendering", "returns": "RenderQueue", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "stopRendering", "returns": "RenderQueue", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "showWindow", "returns": "RenderQueue", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "queueInAME", "returns": "RenderQueue", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setQueueNotify", "returns": "RenderQueue", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "renderQueueItem",
+      "methods": [
+        {"name": "applyTemplate", "returns": "RenderQueueItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setSettings", "returns": "RenderQueueItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setRender", "returns": "RenderQueueItem", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setQueueItemNotify", "returns": "RenderQueueItem", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "outputModule",
+      "methods": [
+        {"name": "getModules", "returns": "list[OutputModule]"},
+        {"name": "getByIndex", "returns": "OutputModule | None"},
+        {"name": "applyTemplate", "returns": "OutputModule", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setSettings", "returns": "OutputModule", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "setOutputPath", "returns": "OutputModule", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "saveAsTemplate", "returns": "OutputModule", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
     {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any", "raw": true}]}
   ],
   "proxies": [
@@ -70,7 +106,8 @@
         {"name": "footage_items", "type": "list[FootageItem]", "source": "project.getFootageItems"},
         {"name": "folders", "type": "list[FolderItem]", "source": "project.getFolders"},
         {"name": "active_item", "type": "ProjectItem | None", "source": "project.getActiveItem"},
-        {"name": "selected_items", "type": "list[ProjectItem]", "source": "project.getSelectedItems"}
+        {"name": "selected_items", "type": "list[ProjectItem]", "source": "project.getSelectedItems"},
+        {"name": "render_queue", "type": "RenderQueue", "source": "renderQueue.get"}
       ],
       "methods": [
         {"name": "getItemById", "returns": "ProjectItem | None"},
@@ -123,7 +160,10 @@
         {"name": "selected_layers", "type": "list[Layer]", "source": "layer.getSelected"},
         {"name": "typename", "type": "str | None"}
       ],
-      "methods": [{"name": "getLayerById", "returns": "Layer | None"}]
+      "methods": [
+        {"name": "getLayerById", "returns": "Layer | None"},
+        {"name": "addToRenderQueue", "returns": "RenderQueueItem"}
+      ]
     },
     {
       "name": "FootageItemProxy",
@@ -240,6 +280,77 @@
         {"name": "tracking", "type": "Any"},
         {"name": "justification", "type": "str | None"},
         {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "RenderQueueProxy",
+      "properties": [
+        {"name": "num_items", "type": "int | None"},
+        {"name": "can_queue_in_ame", "type": "bool | None"},
+        {"name": "queue_notify", "type": "bool | None"},
+        {"name": "rendering", "type": "bool | None"},
+        {"name": "items", "type": "list[RenderQueueItem]", "source": "renderQueue.getItems"},
+        {"name": "typename", "type": "str | None"}
+      ],
+      "methods": [
+        {"name": "getItemByIndex", "returns": "RenderQueueItem | None"},
+        {"name": "addComposition", "returns": "RenderQueueItem"},
+        {"name": "queueSelectedCompositions", "returns": "list[RenderQueueItem]"},
+        {"name": "render", "returns": "RenderQueue"},
+        {"name": "pauseRendering", "returns": "RenderQueue"},
+        {"name": "stopRendering", "returns": "RenderQueue"},
+        {"name": "showWindow", "returns": "RenderQueue"},
+        {"name": "queueInAME", "returns": "RenderQueue"},
+        {"name": "setQueueNotify", "returns": "RenderQueue"}
+      ]
+    },
+    {
+      "name": "RenderQueueItemProxy",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "index", "type": "int | None"},
+        {"name": "comp_id", "type": "Any"},
+        {"name": "comp_name", "type": "str | None"},
+        {"name": "status", "type": "str | None"},
+        {"name": "elapsed_seconds", "type": "float | None"},
+        {"name": "render", "type": "bool | None"},
+        {"name": "skip_frames", "type": "int | None"},
+        {"name": "queue_item_notify", "type": "bool | None"},
+        {"name": "time_span_start", "type": "float | None"},
+        {"name": "time_span_duration", "type": "float | None"},
+        {"name": "num_output_modules", "type": "int | None"},
+        {"name": "templates", "type": "list[str]"},
+        {"name": "settings", "type": "dict[str, Any] | None"},
+        {"name": "output_modules", "type": "list[OutputModule]", "source": "outputModule.getModules"},
+        {"name": "typename", "type": "str | None"}
+      ],
+      "methods": [
+        {"name": "outputModule", "returns": "OutputModule | None"},
+        {"name": "applyTemplate", "returns": "RenderQueueItem"},
+        {"name": "setSettings", "returns": "RenderQueueItem"},
+        {"name": "setRender", "returns": "RenderQueueItem"},
+        {"name": "setQueueItemNotify", "returns": "RenderQueueItem"}
+      ]
+    },
+    {
+      "name": "OutputModuleProxy",
+      "properties": [
+        {"name": "item_index", "type": "int | None"},
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "file_path", "type": "str | None"},
+        {"name": "output_path", "type": "str | None"},
+        {"name": "include_source_xmp", "type": "bool | None"},
+        {"name": "post_render_action", "type": "str | None"},
+        {"name": "templates", "type": "list[str]"},
+        {"name": "settings", "type": "dict[str, Any] | None"},
+        {"name": "typename", "type": "str | None"}
+      ],
+      "methods": [
+        {"name": "applyTemplate", "returns": "OutputModule"},
+        {"name": "setSettings", "returns": "OutputModule"},
+        {"name": "setOutputPath", "returns": "OutputModule"},
+        {"name": "saveAsTemplate", "returns": "OutputModule"}
       ]
     }
   ]

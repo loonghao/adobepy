@@ -220,6 +220,90 @@ function testExtendScriptDispatchers() {
   };
   const aeItems = [aeComp, aeFootage, aeFolder];
   const aeLayers = [aeTextLayer, aePlateLayer];
+  const aeOutputModule = {
+    name: "Lossless",
+    file: { fsName: "C:/renders/Main Comp.mov", fullName: "C:/renders/Main Comp.mov", name: "Main Comp.mov" },
+    includeSourceXMP: true,
+    postRenderAction: "NONE",
+    templates: ["Lossless", "H.264"],
+    settings: { Format: "QuickTime" },
+    applyTemplate(name) {
+      this.name = name;
+    },
+    getSettings() {
+      return this.settings;
+    },
+    setSettings(settings) {
+      this.settings = settings;
+      const outputInfo = settings["Output File Info"];
+      if (outputInfo && outputInfo["Full Flat Path"]) {
+        this.file = { fsName: outputInfo["Full Flat Path"], fullName: outputInfo["Full Flat Path"], name: outputInfo["Full Flat Path"].split(/[\\/]/).pop() };
+      }
+    },
+    saveAsTemplate(name) {
+      this.templates.push(name);
+    },
+  };
+  const aeRenderQueueItems = [];
+  function createRenderQueueItem(comp) {
+    const item = {
+      id: `rq-${aeRenderQueueItems.length + 1}`,
+      index: aeRenderQueueItems.length + 1,
+      comp,
+      elapsedSeconds: null,
+      outputModules: { length: 1 },
+      queueItemNotify: false,
+      render: true,
+      skipFrames: 0,
+      status: "QUEUED",
+      templates: ["Best Settings"],
+      timeSpanStart: 0,
+      timeSpanDuration: comp.duration,
+      settings: { Quality: "Best" },
+      applyTemplate(name) {
+        this.settings = { template: name };
+      },
+      getSettings() {
+        return this.settings;
+      },
+      setSettings(settings) {
+        this.settings = settings;
+      },
+      outputModule(index) {
+        return index === 1 ? aeOutputModule : null;
+      },
+    };
+    aeRenderQueueItems.push(item);
+    return item;
+  }
+  createRenderQueueItem(aeComp);
+  const aeRenderQueue = {
+    canQueueInAME: true,
+    queueNotify: false,
+    rendering: false,
+    get numItems() {
+      return aeRenderQueueItems.length;
+    },
+    item(index) {
+      return aeRenderQueueItems[index - 1] || null;
+    },
+    items: {
+      add(comp) {
+        return createRenderQueueItem(comp);
+      },
+    },
+    render() {
+      this.rendering = false;
+    },
+    pauseRendering(pause) {
+      this.rendering = Boolean(pause);
+    },
+    stopRendering() {
+      this.rendering = false;
+    },
+    showWindow() {},
+    queueInAME() {},
+  };
   aeComp.numLayers = aeLayers.length;
   aeComp.selectedLayers = [aeTextLayer];
   aeComp.layer = (index) => aeLayers[index - 1];
@@ -227,12 +311,17 @@ function testExtendScriptDispatchers() {
     file: { name: "demo.aep", fsName: "C:/demo.aep" },
     numItems: aeItems.length,
     activeItem: aeComp,
+    renderQueue: aeRenderQueue,
     item(index) {
       return aeItems[index - 1];
     },
   };
   const ae = loadDispatcher(afterEffectsDispatcherPath, {
     app: { version: "24.4.1", project: aeProject },
+    File: function File(filePath) {
+      return { fsName: filePath, fullName: filePath, name: String(filePath).split(/[\\/]/).pop() };
+    },
+    GetSettingsFormat: { STRING: "STRING", STRING_SETTABLE: "STRING_SETTABLE", NUMBER: "NUMBER", NUMBER_SETTABLE: "NUMBER_SETTABLE" },
   });
   assert.deepStrictEqual(dispatch(ae, "ae_app", "app", "getVersion").result, "24.4.1");
   assert.deepStrictEqual(dispatch(ae, "ae_project", "project", "getActive").result, { name: "demo.aep", path: "C:/demo.aep", itemCount: 3 });
@@ -254,6 +343,27 @@ function testExtendScriptDispatchers() {
   assert.strictEqual(dispatch(ae, "ae_set_text", "text", "setSourceText", [1, 11, { text: "World", fontSize: 36 }]).result.text, "World");
   assert.strictEqual(aeTextProperty.value.fontSize, 36);
   assert.strictEqual(dispatch(ae, "ae_missing_text", "text", "setSourceText", [1, 12, { text: "Nope" }]).error.code, -32004);
+  assert.strictEqual(dispatch(ae, "ae_render_queue", "renderQueue", "get").result.numItems, 1);
+  assert.strictEqual(dispatch(ae, "ae_render_items", "renderQueue", "getItems").result[0].compName, "Main Comp");
+  assert.strictEqual(dispatch(ae, "ae_render_item", "renderQueue", "getItemByIndex", [1]).result.status, "QUEUED");
+  assert.strictEqual(dispatch(ae, "ae_add_comp", "renderQueue", "addComposition", [{ comp: 1, outputPath: "C:/renders/added.mov", outputModuleTemplate: "H.264" }]).result.compId, 1);
+  assert.strictEqual(aeOutputModule.file.fsName, "C:/renders/added.mov");
+  assert.strictEqual(aeOutputModule.name, "H.264");
+  assert.strictEqual(dispatch(ae, "ae_queue_selected", "renderQueue", "queueSelectedCompositions", [{ outputDirectory: "C:/renders/selected" }]).result[0].compName, "Main Comp");
+  assert.strictEqual(dispatch(ae, "ae_rq_item_template", "renderQueueItem", "applyTemplate", [1, "Draft Settings"]).result.settings.template, "Draft Settings");
+  assert.deepStrictEqual(dispatch(ae, "ae_rq_item_settings", "renderQueueItem", "setSettings", [1, { Quality: "Draft" }]).result.settings, { Quality: "Draft" });
+  assert.strictEqual(dispatch(ae, "ae_rq_item_render", "renderQueueItem", "setRender", [1, false]).result.render, false);
+  assert.strictEqual(dispatch(ae, "ae_rq_item_notify", "renderQueueItem", "setQueueItemNotify", [1, true]).result.queueItemNotify, true);
+  assert.strictEqual(dispatch(ae, "ae_output_modules", "outputModule", "getModules", [1]).result[0].outputPath, "C:/renders/selected/added.mov");
+  assert.strictEqual(dispatch(ae, "ae_output_module", "outputModule", "getByIndex", [1, 1]).result.name, "H.264");
+  assert.strictEqual(dispatch(ae, "ae_output_template", "outputModule", "applyTemplate", [1, 1, "Lossless"]).result.name, "Lossless");
+  assert.deepStrictEqual(dispatch(ae, "ae_output_settings", "outputModule", "setSettings", [1, 1, { Crop: true }]).result.settings, { Crop: true });
+  assert.strictEqual(dispatch(ae, "ae_output_path", "outputModule", "setOutputPath", [1, 1, "C:/renders/final.mov"]).result.outputPath, "C:/renders/final.mov");
+  assert.ok(dispatch(ae, "ae_output_save", "outputModule", "saveAsTemplate", [1, 1, "Review"]).result.templates.includes("Review"));
+  assert.strictEqual(dispatch(ae, "ae_missing_output", "outputModule", "getByIndex", [1, 99]).result, null);
+  assert.strictEqual(dispatch(ae, "ae_render", "renderQueue", "render").result.rendering, false);
+  assert.strictEqual(dispatch(ae, "ae_pause", "renderQueue", "pauseRendering", [true]).result.rendering, true);
+  assert.strictEqual(dispatch(ae, "ae_queue_notify", "renderQueue", "setQueueNotify", [true]).result.queueNotify, true);
   assert.strictEqual(dispatch(ae, "ae_raw", "raw", "evalExtendScript", ["app.version"]).result, "24.4.1");
   assert.strictEqual(dispatch(ae, "ae_missing", "layer", "getActive").error.code, -32601);
 

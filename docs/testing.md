@@ -134,6 +134,12 @@ the manifest, creates the archive, and writes the SHA256 file.
   metadata. A live Premiere host is still required to prove actual media output,
   AME queue behavior, installed preset discovery, render events, and filesystem
   permissions.
+- After Effects render queue tests: mock coverage verifies queue serialization,
+  selected-composition queueing, output-module template/settings/path
+  pass-through, and host-script error mapping. A live After Effects host is still
+  required for destructive or slow smoke candidates: `RenderQueue.render()`,
+  `RenderQueue.queueInAME()`, actual file output, installed output-module
+  templates, and filesystem permissions.
 - Packaging tests: use the package script as the final artifact smoke because it
   catches missing dist files, bridge templates, wheel metadata, and CLI build
   regressions.
