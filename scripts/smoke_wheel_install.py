@@ -17,7 +17,7 @@ from adobe.photoshop import Photoshop
 from adobe.indesign import InDesign
 from adobe.premiere import Premiere
 from adobe.after_effects import AfterEffects
-from adobe.illustrator import Illustrator
+from adobe.illustrator import ExportResultProxy, Illustrator, SwatchProxy, TextFrameProxy
 from adobe.raw import RawSession
 from adobe.dcc_mcp import adobe_success
 
@@ -26,6 +26,9 @@ assert InDesign.__name__ == "InDesign"
 assert Premiere.__name__ == "Premiere"
 assert AfterEffects.__name__ == "AfterEffects"
 assert Illustrator.__name__ == "Illustrator"
+assert TextFrameProxy.__name__ == "TextFrameProxy"
+assert SwatchProxy.__name__ == "SwatchProxy"
+assert ExportResultProxy.__name__ == "ExportResultProxy"
 assert RawSession.__name__ == "RawSession"
 assert adobe_success("ok")["success"] is True
 print("adobepy wheel import smoke passed")

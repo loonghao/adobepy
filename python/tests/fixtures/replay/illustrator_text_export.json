@@ -1,0 +1,87 @@
+{
+  "name": "illustrator-text-export",
+  "host": "illustrator",
+  "description": "Replay Illustrator textFrames iteration followed by a PNG24 export helper.",
+  "script": "doc = app.activeDocument\nfor frame in doc.textFrames:\n    print(frame.name)\nresult = doc.exports.png24(\"C:/out/poster\", options={\"artBoardClipping\": True}, command_name=\"Export fixture\")\nprint(result.ok)\n",
+  "expectedStdout": ["Headline", "True"],
+  "exchanges": [
+    {
+      "request": {
+        "host": "illustrator",
+        "namespace": "document",
+        "method": "getActive",
+        "args": [],
+        "options": {}
+      },
+      "response": {
+        "result": {
+          "id": 4,
+          "name": "poster.ai",
+          "path": "C:/work/poster.ai",
+          "width": 1024,
+          "height": 768,
+          "textFrameCount": 1,
+          "storyCount": 1,
+          "swatchCount": 3,
+          "typename": "Document"
+        }
+      }
+    },
+    {
+      "request": {
+        "host": "illustrator",
+        "namespace": "textFrame",
+        "method": "getTextFrames",
+        "args": [],
+        "options": {}
+      },
+      "response": {
+        "result": [
+          {
+            "id": 22,
+            "index": 0,
+            "name": "Headline",
+            "contents": "Ship it",
+            "kind": "TextType.POINTTEXT",
+            "selected": false,
+            "layerName": "Copy",
+            "typename": "TextFrame"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "host": "illustrator",
+        "namespace": "export",
+        "method": "exportFile",
+        "args": [
+          {
+            "path": "C:/out/poster",
+            "format": "png24",
+            "options": {
+              "artBoardClipping": true
+            }
+          }
+        ],
+        "options": {
+          "modal": true,
+          "commandName": "Export fixture"
+        }
+      },
+      "response": {
+        "result": {
+          "ok": true,
+          "path": "C:/out/poster",
+          "format": "png24",
+          "preset": "png24",
+          "options": {
+            "artBoardClipping": true
+          },
+          "documentName": "poster.ai",
+          "typename": "ExportResult"
+        }
+      }
+    }
+  ]
+}

@@ -100,7 +100,8 @@ desktop Adobe app. On a self-hosted runner with Photoshop, the adobepy broker,
 and the UXP bridge connected, it checks capabilities, `app.version`,
 `active_document`, and `active_layers`. Add `-- --mutate` or set
 `ADOBEPY_LIVE_PHOTOSHOP_MUTATE=1` to run a modal hide/show batchPlay smoke
-against the active layer.
+against the active layer. Use `-- --broker-url`, `-- --target`, and
+`-- --timeout` when the runner uses a non-default broker endpoint or target.
 
 ```powershell
 vx just package
@@ -154,16 +155,37 @@ the manifest, creates the archive, and writes the SHA256 file.
 - Native abi3 canary: keep the current `py3-none-any` wheel honest while
   preserving a checked `abi3-py38` build path for future PyO3 extensions.
 
+## CI and Live-Host Smokes
+
+Normal PR and `main` CI stay desktop-free. The regular CI workflow exercises
+Python facades, broker contracts, bridge dispatch mocks, capability drift,
+package metadata, wheel install smoke, and the `abi3-py38` native canary.
+
+The `Live Host Smoke` workflow is manual-only and targets self-hosted Windows
+runners labeled `self-hosted`, `windows`, `adobe`, and `photoshop`. Before
+dispatching it, start Photoshop with an active document, start the adobepy
+broker, connect the Photoshop UXP bridge to that broker, and set the
+`ADOBEPY_TOKEN` repository or environment secret when the broker uses a custom
+token. Workflow inputs select the broker URL, target id, request timeout, and
+whether the smoke may temporarily hide/show the active layer.
+
+Failure output is phase-scoped so breakage points to the likely layer:
+
+| Command or phase | Likely layer |
+| --- | --- |
+| `test:replay` fixture mismatch | Python facade aliasing or broker request shape |
+| `protocol:check` or broker tests | Broker protocol, auth, timeout, or error mapping |
+| `test:bridges` | UXP/CEP bridge dispatch or host serialization |
+| `capabilities:check` | Bridge-advertised methods drifting from IR |
+| `smoke_wheel_install.py` | Wheel metadata, package data, or public imports |
+| `live_photoshop_smoke.py phase=...` | Live host state, bridge connectivity, or broker target |
+
 ## Next High-Value Additions
 
-- Golden capability snapshots: serialize each bridge `hello.capabilities` payload
-  and compare it to the matching IR file so a bridge cannot advertise methods the
-  Python facade does not expose.
-- Broader fixture replay tests: add traces for save/export, modal operations,
-  Premiere project access, and CEP `evalExtendScript` flows.
-- Live-host smoke tests: expand `scripts/live_photoshop_smoke.py` with a small
-  fixture document and screenshot/log export once a self-hosted Photoshop runner
-  is available. CI should stay green without desktop Adobe apps.
+- Broader fixture replay tests: add traces for modal operations, Premiere
+  project access, and CEP `evalExtendScript` flows.
+- Live-host fixture assets: add a tiny Photoshop document fixture plus
+  screenshot/log export for self-hosted runners that can persist artifacts.
 - Official API drift checks: periodically crawl or vendor official UXP/DOM type
   metadata from `generators/api_sources/adobe_api_sources.json` and diff
   generated facade names against the current IR. Treat drift as a review signal,

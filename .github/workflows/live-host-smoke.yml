@@ -1,0 +1,72 @@
+name: Live Host Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: "Adobe host to smoke-test."
+        required: true
+        type: choice
+        default: photoshop
+        options:
+          - photoshop
+      mutate:
+        description: "Run a small modal mutation against the active document."
+        required: true
+        type: boolean
+        default: false
+      broker_url:
+        description: "adobepy broker URL reachable from the self-hosted runner."
+        required: true
+        type: string
+        default: "http://127.0.0.1:47391"
+      target:
+        description: "Broker target id."
+        required: true
+        type: string
+        default: default
+      timeout_seconds:
+        description: "Broker request timeout in seconds."
+        required: true
+        type: string
+        default: "30"
+
+permissions:
+  contents: read
+
+jobs:
+  photoshop:
+    name: Photoshop live smoke
+    if: ${{ inputs.host == 'photoshop' }}
+    runs-on:
+      - self-hosted
+      - windows
+      - adobe
+      - photoshop
+    env:
+      ADOBEPY_BROKER_URL: ${{ inputs.broker_url }}
+      ADOBEPY_LIVE_PHOTOSHOP: "1"
+      ADOBEPY_TARGET: ${{ inputs.target }}
+      ADOBEPY_TOKEN: ${{ secrets.ADOBEPY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+      - name: Run live smoke
+        shell: pwsh
+        run: |
+          $smokeArgs = @(
+            "--broker-url", $env:ADOBEPY_BROKER_URL,
+            "--target", $env:ADOBEPY_TARGET,
+            "--timeout", "${{ inputs.timeout_seconds }}"
+          )
+          if ("${{ inputs.mutate }}" -eq "true") {
+            $smokeArgs += "--mutate"
+          }
+          python scripts/live_photoshop_smoke.py @smokeArgs

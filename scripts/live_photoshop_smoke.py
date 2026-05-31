@@ -21,6 +21,11 @@ from adobe.core import AdobePythonError  # noqa: E402
 from adobe.photoshop import Photoshop  # noqa: E402
 
 
+def env_or_none(name: str) -> str | None:
+    value = os.getenv(name)
+    return value or None
+
+
 def run_phase(name: str, callback: Callable[[], Any]) -> Any:
     try:
         result = callback()
@@ -43,6 +48,10 @@ def hide_show_descriptor(obj: str, layer_id: int | str | None) -> dict[str, Any]
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run an optional live Photoshop adobepy smoke.")
+    parser.add_argument("--broker-url", default=env_or_none("ADOBEPY_BROKER_URL"), help="adobepy broker URL.")
+    parser.add_argument("--token", default=env_or_none("ADOBEPY_TOKEN"), help="Broker auth token. Defaults to ADOBEPY_TOKEN.")
+    parser.add_argument("--target", default=env_or_none("ADOBEPY_TARGET") or "default", help="Broker target id.")
+    parser.add_argument("--timeout", type=float, default=30.0, help="Broker request timeout in seconds.")
     parser.add_argument("--mutate", action="store_true", help="Temporarily hide/show the active layer through modal batchPlay.")
     args = parser.parse_args(argv)
 
@@ -51,14 +60,19 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     mutate = args.mutate or os.getenv("ADOBEPY_LIVE_PHOTOSHOP_MUTATE") == "1"
-    app = Photoshop()
+    app = Photoshop(broker_url=args.broker_url, token=args.token, target=args.target, timeout=args.timeout)
 
     try:
         capabilities = run_phase("capabilities", app.capabilities)
         version = run_phase("version", lambda: app.version)
         document = run_phase("active-document", lambda: app.active_document)
         layers = run_phase("active-layers", lambda: list(app.active_layers))
-        print(f"photoshop version={version!r} target={getattr(app.client, 'target', 'default')!r} capability_sessions={len(capabilities or [])}")
+        print(
+            f"photoshop version={version!r} "
+            f"broker={getattr(app.client, 'broker_url', None)!r} "
+            f"target={getattr(app.client, 'target', 'default')!r} "
+            f"capability_sessions={len(capabilities or [])}"
+        )
         print(f"active_document={getattr(document, 'name', None)!r} active_layers={[layer.name for layer in layers]}")
 
         if mutate:
