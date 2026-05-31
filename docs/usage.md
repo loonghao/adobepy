@@ -132,15 +132,29 @@ for placed in doc.placed_items:
 
 for raster in doc.selected_raster_items:
     print(raster.name, raster.file_path, raster.image_color_space)
+
+for frame in doc.text_frames:
+    print(frame.name, frame.contents, frame.kind)
+    frame.set_contents("Updated headline", command_name="Set headline")
+
+story = doc.get_story("Story 1")
+swatch = doc.get_swatch("Brand Red")
+print(story.contents if story else None)
+print(swatch.color if swatch else None)
+
+doc.exports.png24("C:/out/poster", options={"artBoardClipping": True})
+doc.exports.svg("C:/out/poster-svg", options={"coordinatePrecision": 2})
+doc.exports.pdf("C:/out/poster.pdf", options={"preserveEditability": False})
 ```
 
 Use `adobe.raw.RawSession("illustrator").eval_extendscript(...)` for Illustrator
-APIs outside the typed document/artboard/layer/page-item/path/placed/raster
-facade. Geometry mutations such as `PathItem.setEntirePath`, `translate`,
+APIs outside the typed document/artboard/layer/page-item/path/placed/raster/text/
+swatch/export facade. Geometry mutations such as `PathItem.setEntirePath`, `translate`,
 `resize`, and `rotate` are intentionally deferred in the typed facade until
 their mutation semantics and modal/error behavior are covered by replay or live
-host tests. Text-frame editing, swatches, colors, and export workflows are also
-still outside the typed Illustrator MVP surface.
+host tests. Advanced text styling, custom color creation, print presets, and
+specialized export option objects remain available through raw ExtendScript
+until they are promoted into typed facades.
 
 ## Bridges
 

@@ -63,8 +63,23 @@
       host: "illustrator",
       bridgeKind: "cep",
       bridgeVersion: "0.1.0",
-      namespaces: ["app", "document", "artboard", "layer", "pageItem", "pathItem", "compoundPath", "placedItem", "rasterItem", "raw"],
-      features: ["extendscript", "document", "artboards", "layers", "pageItems", "selection", "pathItems", "compoundPathItems", "placedItems", "rasterItems"],
+      namespaces: ["app", "document", "artboard", "layer", "pageItem", "pathItem", "compoundPath", "placedItem", "rasterItem", "textFrame", "story", "swatch", "export", "raw"],
+      features: [
+        "extendscript",
+        "document",
+        "artboards",
+        "layers",
+        "pageItems",
+        "selection",
+        "pathItems",
+        "compoundPathItems",
+        "placedItems",
+        "rasterItems",
+        "textFrames",
+        "stories",
+        "swatches",
+        "export"
+      ],
       methods: {
         app: ["getVersion"],
         document: ["getActive"],
@@ -75,6 +90,10 @@
         compoundPath: ["getCompoundPathItems", "getSelected", "getByName", "getLayerItems", "getPathItems"],
         placedItem: ["getPlacedItems", "getSelected", "getByName", "getLayerItems"],
         rasterItem: ["getRasterItems", "getSelected", "getByName", "getLayerItems"],
+        textFrame: ["getTextFrames", "getSelected", "getByName", "setContents"],
+        story: ["getStories", "getByName"],
+        swatch: ["getSwatches", "getByName"],
+        export: ["save", "saveAs", "exportFile"],
         raw: ["evalExtendScript"]
       }
     }

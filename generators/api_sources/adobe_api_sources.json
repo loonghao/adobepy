@@ -382,7 +382,7 @@
       "runtimeModule": "extendscript",
       "entryPoint": "app",
       "ir": "generators/ir/illustrator-mvp.json",
-      "trackedBy": [5, 8, 21, 22],
+      "trackedBy": [5, 8, 21, 22, 23],
       "officialDocs": [
         {
           "name": "Illustrator JavaScript Scripting Reference",
@@ -455,6 +455,46 @@
           "url": "https://ai-scripting.docsforadobe.dev/jsobjref/RasterItem/"
         },
         {
+          "name": "Illustrator TextFrameItem object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/TextFrameItem/"
+        },
+        {
+          "name": "Illustrator TextFrameItems object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/TextFrameItems/"
+        },
+        {
+          "name": "Illustrator Story object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/Story/"
+        },
+        {
+          "name": "Illustrator Stories object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/Stories/"
+        },
+        {
+          "name": "Illustrator Swatch object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/Swatch/"
+        },
+        {
+          "name": "Illustrator Swatches object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/Swatches/"
+        },
+        {
+          "name": "Illustrator ExportOptionsPNG24 object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/ExportOptionsPNG24/"
+        },
+        {
+          "name": "Illustrator ExportOptionsJPEG object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/ExportOptionsJPEG/"
+        },
+        {
+          "name": "Illustrator ExportOptionsSVG object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/ExportOptionsSVG/"
+        },
+        {
+          "name": "Illustrator PDFSaveOptions object",
+          "url": "https://ai-scripting.docsforadobe.dev/jsobjref/PDFSaveOptions/"
+        },
+        {
           "name": "Adobe ExtendScript guide mirror",
           "url": "https://extendscript.docsforadobe.dev/"
         }
@@ -497,11 +537,23 @@
         },
         {
           "name": "Text frames, stories, swatches, colors, and export workflows",
-          "level": "planned",
-          "trackedBy": 8,
-          "docRefs": ["Illustrator Scripting Guide mirror"],
-          "irNamespaces": [],
-          "facadeObjects": []
+          "level": "mvp",
+          "trackedBy": 23,
+          "docRefs": [
+            "Illustrator Document object",
+            "Illustrator TextFrameItem object",
+            "Illustrator TextFrameItems object",
+            "Illustrator Story object",
+            "Illustrator Stories object",
+            "Illustrator Swatch object",
+            "Illustrator Swatches object",
+            "Illustrator ExportOptionsPNG24 object",
+            "Illustrator ExportOptionsJPEG object",
+            "Illustrator ExportOptionsSVG object",
+            "Illustrator PDFSaveOptions object"
+          ],
+          "irNamespaces": ["textFrame", "story", "swatch", "export"],
+          "facadeObjects": ["TextFrameProxy", "StoryProxy", "SwatchProxy", "DocumentExportProxy", "ExportResultProxy"]
         }
       ]
     }

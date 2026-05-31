@@ -488,6 +488,39 @@ function testExtendScriptDispatchers() {
     imageColorSpace: "CMYK",
     overprint: true,
   };
+  const aiTextFrame = {
+    ...aiPageItem,
+    uuid: "text-1",
+    name: "Headline",
+    typename: "TextFrame",
+    selected: true,
+    contents: "Hello Illustrator",
+    kind: "PointText",
+    orientation: "Horizontal",
+    position: [120, 480],
+    geometricBounds: [120, 480, 320, 430],
+    visibleBounds: [118, 482, 322, 428],
+    width: 200,
+    height: 50,
+    characters: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+    words: [{}, {}],
+    paragraphs: [{}],
+  };
+  const aiStory = {
+    id: "story-1",
+    name: "Story 1",
+    length: 17,
+    textRange: { contents: "Hello Illustrator" },
+    textFrames: [aiTextFrame],
+    words: [{}, {}],
+    paragraphs: [{}],
+    typename: "Story",
+  };
+  const aiSwatch = {
+    name: "Brand Red",
+    color: { typename: "RGBColor", red: 255, green: 12, blue: 24 },
+    typename: "Swatch",
+  };
   aiLayer.layers = [aiChildLayer];
   aiLayer.pageItems = [aiPathItem, aiCompoundPathItem, aiPlacedItem, aiRasterItem];
   aiLayer.pathItems = [aiPathItem];
@@ -514,15 +547,38 @@ function testExtendScriptDispatchers() {
     compoundPathItems: [aiCompoundPathItem],
     placedItems: [aiPlacedItem],
     rasterItems: [aiRasterItem],
-    selection: [aiPathItem, aiCompoundPathItem, aiRasterItem],
+    textFrames: [aiTextFrame],
+    stories: [aiStory],
+    swatches: [aiSwatch],
+    selection: [aiPathItem, aiCompoundPathItem, aiRasterItem, aiTextFrame],
     typename: "Document",
+    save() {
+      aiExports.push({ kind: "save" });
+    },
+    saveAs(file, options) {
+      aiExports.push({ kind: "saveAs", path: file.fsName, options });
+    },
+    exportFile(file, exportType, options) {
+      aiExports.push({ kind: "exportFile", path: file.fsName, exportType, options });
+    },
   };
+  aiDocument.swatches.getByName = (name) => (name === "Brand Red" ? aiSwatch : null);
+  const aiExports = [];
   const ai = loadDispatcher(illustratorDispatcherPath, {
     app: {
       version: "28.2.0",
       documents: { length: 1 },
       activeDocument: aiDocument,
     },
+    File: function File(filePath) {
+      return { fsName: filePath, fullName: filePath, name: String(filePath).split(/[\\/]/).pop() };
+    },
+    ExportType: { PNG24: "PNG24", JPEG: "JPEG", SVG: "SVG" },
+    ExportOptionsPNG24: function ExportOptionsPNG24() {},
+    ExportOptionsJPEG: function ExportOptionsJPEG() {},
+    ExportOptionsSVG: function ExportOptionsSVG() {},
+    PDFSaveOptions: function PDFSaveOptions() {},
+    IllustratorSaveOptions: function IllustratorSaveOptions() {},
   });
   assert.deepStrictEqual(dispatch(ai, "ai_app", "app", "getVersion").result, "28.2.0");
   assert.deepStrictEqual(dispatch(ai, "ai_doc", "document", "getActive").result, {
@@ -537,7 +593,10 @@ function testExtendScriptDispatchers() {
     compoundPathItemCount: 1,
     placedItemCount: 1,
     rasterItemCount: 1,
-    selectionCount: 3,
+    textFrameCount: 1,
+    storyCount: 1,
+    swatchCount: 1,
+    selectionCount: 4,
     typename: "Document",
   });
   assert.strictEqual(dispatch(ai, "ai_artboards", "artboard", "getArtboards").result[0].name, "Artboard 1");
@@ -567,6 +626,24 @@ function testExtendScriptDispatchers() {
   assert.strictEqual(dispatch(ai, "ai_selected_raster_items", "rasterItem", "getSelected").result[0].name, "Raster");
   assert.strictEqual(dispatch(ai, "ai_raster_by_name", "rasterItem", "getByName", ["Raster"]).result.filePath, "C:/assets/photo.png");
   assert.strictEqual(dispatch(ai, "ai_layer_raster_items", "rasterItem", "getLayerItems", ["Artwork"]).result[0].imageColorSpace, "CMYK");
+  assert.strictEqual(dispatch(ai, "ai_text_frames", "textFrame", "getTextFrames").result[0].contents, "Hello Illustrator");
+  assert.strictEqual(dispatch(ai, "ai_selected_text_frames", "textFrame", "getSelected").result[0].characterCount, 17);
+  assert.strictEqual(dispatch(ai, "ai_text_frame_by_name", "textFrame", "getByName", ["Headline"]).result.kind, "PointText");
+  assert.strictEqual(dispatch(ai, "ai_set_text_frame", "textFrame", "setContents", ["Headline", "Updated"]).result.contents, "Updated");
+  assert.strictEqual(aiTextFrame.contents, "Updated");
+  assert.strictEqual(dispatch(ai, "ai_stories", "story", "getStories").result[0].textFrameCount, 1);
+  assert.strictEqual(dispatch(ai, "ai_story_by_name", "story", "getByName", ["Story 1"]).result.contents, "Hello Illustrator");
+  assert.strictEqual(dispatch(ai, "ai_swatches", "swatch", "getSwatches").result[0].color.red, 255);
+  assert.strictEqual(dispatch(ai, "ai_swatch_by_name", "swatch", "getByName", ["Brand Red"]).result.colorTypename, "RGBColor");
+  assert.strictEqual(dispatch(ai, "ai_save", "export", "save").result.preset, "save");
+  assert.strictEqual(aiExports[0].kind, "save");
+  assert.strictEqual(dispatch(ai, "ai_save_as", "export", "saveAs", [{ path: "C:/out/poster.pdf", format: "pdf", options: { preserveEditability: false } }]).result.format, "pdf");
+  assert.strictEqual(aiExports[1].options.preserveEditability, false);
+  assert.strictEqual(dispatch(ai, "ai_export_png", "export", "exportFile", [{ path: "C:/out/poster", format: "png24", options: { artBoardClipping: true } }]).result.options.artBoardClipping, true);
+  assert.strictEqual(aiExports[2].exportType, "PNG24");
+  assert.strictEqual(dispatch(ai, "ai_export_svg", "export", "exportFile", [{ path: "C:/out/poster-svg", format: "svg", options: { coordinatePrecision: 2 } }]).result.format, "svg");
+  assert.strictEqual(aiExports[3].exportType, "SVG");
+  assert.strictEqual(dispatch(ai, "ai_missing_export_path", "export", "exportFile", [{ format: "png24" }]).error.code, -32004);
   assert.strictEqual(dispatch(ai, "ai_unsupported_path_mutation", "pathItem", "setEntirePath", ["Logo Path", [[0, 0]]]).error.code, -32601);
   assert.strictEqual(dispatch(ai, "ai_raw", "raw", "evalExtendScript", ["app.version"]).result, "28.2.0");
 

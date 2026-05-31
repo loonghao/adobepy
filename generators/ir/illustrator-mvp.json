@@ -70,6 +70,37 @@
         {"name": "getLayerItems", "returns": "list[RasterItem]"}
       ]
     },
+    {
+      "name": "textFrame",
+      "methods": [
+        {"name": "getTextFrames", "returns": "list[TextFrame]"},
+        {"name": "getSelected", "returns": "list[TextFrame]"},
+        {"name": "getByName", "returns": "TextFrame | None"},
+        {"name": "setContents", "returns": "TextFrame", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
+    {
+      "name": "story",
+      "methods": [
+        {"name": "getStories", "returns": "list[Story]"},
+        {"name": "getByName", "returns": "Story | None"}
+      ]
+    },
+    {
+      "name": "swatch",
+      "methods": [
+        {"name": "getSwatches", "returns": "list[Swatch]"},
+        {"name": "getByName", "returns": "Swatch | None"}
+      ]
+    },
+    {
+      "name": "export",
+      "methods": [
+        {"name": "save", "returns": "ExportResult", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "saveAs", "returns": "ExportResult", "mutatesState": true, "requiresModalWhenMutating": true},
+        {"name": "exportFile", "returns": "ExportResult", "mutatesState": true, "requiresModalWhenMutating": true}
+      ]
+    },
     {"name": "raw", "methods": [{"name": "evalExtendScript", "returns": "Any", "raw": true}]}
   ],
   "proxies": [
@@ -87,6 +118,9 @@
         {"name": "compound_path_item_count", "type": "int | None"},
         {"name": "placed_item_count", "type": "int | None"},
         {"name": "raster_item_count", "type": "int | None"},
+        {"name": "text_frame_count", "type": "int | None"},
+        {"name": "story_count", "type": "int | None"},
+        {"name": "swatch_count", "type": "int | None"},
         {"name": "selection_count", "type": "int | None"},
         {"name": "artboards", "type": "list[Artboard]", "source": "artboard.getArtboards"},
         {"name": "active_artboard", "type": "Artboard | None", "source": "artboard.getActive"},
@@ -102,6 +136,11 @@
         {"name": "selected_placed_items", "type": "list[PlacedItem]", "source": "placedItem.getSelected"},
         {"name": "raster_items", "type": "list[RasterItem]", "source": "rasterItem.getRasterItems"},
         {"name": "selected_raster_items", "type": "list[RasterItem]", "source": "rasterItem.getSelected"},
+        {"name": "text_frames", "type": "list[TextFrame]", "source": "textFrame.getTextFrames"},
+        {"name": "selected_text_frames", "type": "list[TextFrame]", "source": "textFrame.getSelected"},
+        {"name": "stories", "type": "list[Story]", "source": "story.getStories"},
+        {"name": "swatches", "type": "list[Swatch]", "source": "swatch.getSwatches"},
+        {"name": "exports", "type": "DocumentExportProxy"},
         {"name": "typename", "type": "str | None"}
       ],
       "methods": [
@@ -110,7 +149,13 @@
         {"name": "getPathItemByName", "returns": "PathItem | None"},
         {"name": "getCompoundPathItemByName", "returns": "CompoundPathItem | None"},
         {"name": "getPlacedItemByName", "returns": "PlacedItem | None"},
-        {"name": "getRasterItemByName", "returns": "RasterItem | None"}
+        {"name": "getRasterItemByName", "returns": "RasterItem | None"},
+        {"name": "getTextFrameByName", "returns": "TextFrame | None"},
+        {"name": "getStoryByName", "returns": "Story | None"},
+        {"name": "getSwatchByName", "returns": "Swatch | None"},
+        {"name": "save", "returns": "ExportResult"},
+        {"name": "saveAs", "returns": "ExportResult"},
+        {"name": "exportFile", "returns": "ExportResult"}
       ]
     },
     {
@@ -329,6 +374,75 @@
         {"name": "colorized_grayscale", "type": "bool | None"},
         {"name": "image_color_space", "type": "Any"},
         {"name": "overprint", "type": "bool | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "TextFrameProxy",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "contents", "type": "str | None"},
+        {"name": "kind", "type": "Any"},
+        {"name": "orientation", "type": "Any"},
+        {"name": "position", "type": "Any"},
+        {"name": "geometric_bounds", "type": "Any"},
+        {"name": "visible_bounds", "type": "Any"},
+        {"name": "width", "type": "Any"},
+        {"name": "height", "type": "Any"},
+        {"name": "selected", "type": "bool | None"},
+        {"name": "layer_name", "type": "str | None"},
+        {"name": "character_count", "type": "int | None"},
+        {"name": "word_count", "type": "int | None"},
+        {"name": "paragraph_count", "type": "int | None"},
+        {"name": "typename", "type": "str | None"}
+      ],
+      "methods": [{"name": "setContents", "returns": "TextFrame"}]
+    },
+    {
+      "name": "StoryProxy",
+      "properties": [
+        {"name": "id", "type": "Any"},
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "contents", "type": "str | None"},
+        {"name": "length", "type": "int | None"},
+        {"name": "text_frame_count", "type": "int | None"},
+        {"name": "word_count", "type": "int | None"},
+        {"name": "paragraph_count", "type": "int | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "SwatchProxy",
+      "properties": [
+        {"name": "index", "type": "int | None"},
+        {"name": "name", "type": "str | None"},
+        {"name": "color", "type": "Any"},
+        {"name": "color_typename", "type": "str | None"},
+        {"name": "typename", "type": "str | None"}
+      ]
+    },
+    {
+      "name": "DocumentExportProxy",
+      "methods": [
+        {"name": "file", "returns": "ExportResult"},
+        {"name": "png24", "returns": "ExportResult"},
+        {"name": "jpeg", "returns": "ExportResult"},
+        {"name": "svg", "returns": "ExportResult"},
+        {"name": "pdf", "returns": "ExportResult"}
+      ]
+    },
+    {
+      "name": "ExportResultProxy",
+      "properties": [
+        {"name": "ok", "type": "bool | None"},
+        {"name": "path", "type": "str | None"},
+        {"name": "format", "type": "str | None"},
+        {"name": "preset", "type": "str | None"},
+        {"name": "options", "type": "dict[str, Any]"},
+        {"name": "document_name", "type": "str | None"},
         {"name": "typename", "type": "str | None"}
       ]
     }

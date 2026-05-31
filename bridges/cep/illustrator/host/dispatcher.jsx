@@ -88,6 +88,39 @@ function adobepyDispatch(payload) {
     if (request.namespace === "rasterItem" && request.method === "getLayerItems") {
       return adobepyResult(request.id, adobepyIllustratorLayerRasterItems(adobepyIllustratorActiveDocument(), (request.args || [])[0]));
     }
+    if (request.namespace === "textFrame" && request.method === "getTextFrames") {
+      return adobepyResult(request.id, adobepyIllustratorTextFrames(adobepyIllustratorActiveDocument()));
+    }
+    if (request.namespace === "textFrame" && request.method === "getSelected") {
+      return adobepyResult(request.id, adobepyIllustratorSelectedTextFrames(adobepyIllustratorActiveDocument()));
+    }
+    if (request.namespace === "textFrame" && request.method === "getByName") {
+      return adobepyResult(request.id, adobepyIllustratorTextFrameByName(adobepyIllustratorActiveDocument(), String((request.args || [])[0] || "")));
+    }
+    if (request.namespace === "textFrame" && request.method === "setContents") {
+      return adobepyResult(request.id, adobepyIllustratorSetTextFrameContents(adobepyIllustratorActiveDocument(), (request.args || [])[0], (request.args || [])[1]));
+    }
+    if (request.namespace === "story" && request.method === "getStories") {
+      return adobepyResult(request.id, adobepyIllustratorStories(adobepyIllustratorActiveDocument()));
+    }
+    if (request.namespace === "story" && request.method === "getByName") {
+      return adobepyResult(request.id, adobepyIllustratorStoryByName(adobepyIllustratorActiveDocument(), String((request.args || [])[0] || "")));
+    }
+    if (request.namespace === "swatch" && request.method === "getSwatches") {
+      return adobepyResult(request.id, adobepyIllustratorSwatches(adobepyIllustratorActiveDocument()));
+    }
+    if (request.namespace === "swatch" && request.method === "getByName") {
+      return adobepyResult(request.id, adobepyIllustratorSwatchByName(adobepyIllustratorActiveDocument(), String((request.args || [])[0] || "")));
+    }
+    if (request.namespace === "export" && request.method === "save") {
+      return adobepyResult(request.id, adobepyIllustratorSave(adobepyIllustratorActiveDocument()));
+    }
+    if (request.namespace === "export" && request.method === "saveAs") {
+      return adobepyResult(request.id, adobepyIllustratorSaveAs(adobepyIllustratorActiveDocument(), (request.args || [])[0] || {}));
+    }
+    if (request.namespace === "export" && request.method === "exportFile") {
+      return adobepyResult(request.id, adobepyIllustratorExportFile(adobepyIllustratorActiveDocument(), (request.args || [])[0] || {}));
+    }
     if (request.namespace === "raw" && request.method === "evalExtendScript") {
       return adobepyResult(request.id, eval((request.args || [])[0]));
     }
@@ -121,6 +154,9 @@ function adobepyIllustratorDocument() {
     compoundPathItemCount: adobepyCollectionLength(document.compoundPathItems),
     placedItemCount: adobepyCollectionLength(document.placedItems),
     rasterItemCount: adobepyCollectionLength(document.rasterItems),
+    textFrameCount: adobepyCollectionLength(document.textFrames),
+    storyCount: adobepyCollectionLength(document.stories),
+    swatchCount: adobepyCollectionLength(document.swatches),
     selectionCount: adobepyIllustratorSelectedPageItems(document).length,
     typename: "Document"
   };
@@ -488,6 +524,218 @@ function adobepyIllustratorRasterItem(item, index) {
   return payload;
 }
 
+function adobepyIllustratorTextFrames(document) {
+  return adobepyIllustratorTextFrameCollection(document ? document.textFrames : null);
+}
+
+function adobepyIllustratorSelectedTextFrames(document) {
+  return adobepyIllustratorTextFrameCollection(adobepyIllustratorFilteredSelection(document, ["TextFrame", "TextFrameItem"]));
+}
+
+function adobepyIllustratorTextFrameByName(document, name) {
+  return adobepyIllustratorTextFrame(adobepyIllustratorFindTextFrame(document, name), null);
+}
+
+function adobepyIllustratorSetTextFrameContents(document, key, contents) {
+  var item = adobepyIllustratorFindTextFrame(document, key);
+  if (!item) throw new Error("Illustrator text frame not found: " + key);
+  item.contents = String(typeof contents === "undefined" || contents === null ? "" : contents);
+  return adobepyIllustratorTextFrame(item, null);
+}
+
+function adobepyIllustratorTextFrameCollection(items) {
+  var result = [];
+  var count = adobepyCollectionLength(items);
+  for (var index = 0; index < count; index += 1) {
+    var item = adobepyCollectionItem(items, index);
+    if (item) result.push(adobepyIllustratorTextFrame(item, index));
+  }
+  return result;
+}
+
+function adobepyIllustratorTextFrame(item, index) {
+  var payload = adobepyIllustratorPageItem(item, index);
+  if (!payload) return null;
+  payload.contents = adobepyStringOrNull(adobepySafeValue(item, "contents"));
+  payload.kind = adobepySerializableValue(adobepySafeValue(item, "kind"));
+  payload.orientation = adobepySerializableValue(adobepySafeValue(item, "orientation"));
+  payload.characterCount = adobepyCollectionLength(adobepySafeValue(item, "characters"));
+  payload.wordCount = adobepyCollectionLength(adobepySafeValue(item, "words"));
+  payload.paragraphCount = adobepyCollectionLength(adobepySafeValue(item, "paragraphs"));
+  payload.typename = "TextFrame";
+  return payload;
+}
+
+function adobepyIllustratorFindTextFrame(document, key) {
+  var items = document ? document.textFrames : null;
+  var count = adobepyCollectionLength(items);
+  for (var index = 0; index < count; index += 1) {
+    var item = adobepyCollectionItem(items, index);
+    if (adobepyIllustratorMatchesItemKey(item, key, index)) return item;
+  }
+  return null;
+}
+
+function adobepyIllustratorStories(document) {
+  var result = [];
+  var stories = document ? document.stories : null;
+  var count = adobepyCollectionLength(stories);
+  for (var index = 0; index < count; index += 1) {
+    var story = adobepyCollectionItem(stories, index);
+    if (story) result.push(adobepyIllustratorStory(story, index));
+  }
+  return result;
+}
+
+function adobepyIllustratorStoryByName(document, name) {
+  var stories = adobepyIllustratorStories(document);
+  for (var index = 0; index < stories.length; index += 1) {
+    if (String(stories[index].name) === String(name) || String(stories[index].id) === String(name) || String(stories[index].index) === String(name)) return stories[index];
+  }
+  return null;
+}
+
+function adobepyIllustratorStory(story, index) {
+  if (!story) return null;
+  var textRange = adobepySafeValue(story, "textRange");
+  var contents = adobepySafeValue(story, "contents");
+  if (typeof contents === "undefined") contents = adobepySafeValue(textRange, "contents");
+  return {
+    id: adobepySafeValue(story, "id") || adobepySafeValue(story, "name") || index,
+    index: index,
+    name: adobepyStringOrNull(adobepySafeValue(story, "name")) || "Story " + (index + 1),
+    contents: adobepyStringOrNull(contents),
+    length: adobepyNumberOrNull(adobepySafeValue(story, "length")) || adobepyCollectionLength(adobepySafeValue(story, "characters")),
+    textFrameCount: adobepyCollectionLength(adobepySafeValue(story, "textFrames")),
+    wordCount: adobepyCollectionLength(adobepySafeValue(story, "words")),
+    paragraphCount: adobepyCollectionLength(adobepySafeValue(story, "paragraphs")),
+    typename: "Story"
+  };
+}
+
+function adobepyIllustratorSwatches(document) {
+  var result = [];
+  var swatches = document ? document.swatches : null;
+  var count = adobepyCollectionLength(swatches);
+  for (var index = 0; index < count; index += 1) {
+    var swatch = adobepyCollectionItem(swatches, index);
+    if (swatch) result.push(adobepyIllustratorSwatch(swatch, index));
+  }
+  return result;
+}
+
+function adobepyIllustratorSwatchByName(document, name) {
+  if (!document || !document.swatches) return null;
+  if (typeof document.swatches.getByName === "function") {
+    try {
+      return adobepyIllustratorSwatch(document.swatches.getByName(name), null);
+    } catch (_) {
+    }
+  }
+  return adobepyIllustratorFindSerializedByName(adobepyIllustratorSwatches(document), name);
+}
+
+function adobepyIllustratorSwatch(swatch, index) {
+  if (!swatch) return null;
+  var color = adobepyIllustratorColor(adobepySafeValue(swatch, "color"));
+  return {
+    index: typeof index === "number" ? index : null,
+    name: adobepyStringOrNull(adobepySafeValue(swatch, "name")),
+    color: color,
+    colorTypename: color && typeof color === "object" ? adobepyStringOrNull(color.typename) : null,
+    typename: "Swatch"
+  };
+}
+
+function adobepyIllustratorSave(document) {
+  if (!document) throw new Error("Illustrator document is required");
+  if (typeof document.save !== "function") throw new Error("Illustrator Document.save() is unavailable");
+  document.save();
+  return adobepyIllustratorExportResult(document, adobepyIllustratorDocumentPath(document), "ai", "save", {});
+}
+
+function adobepyIllustratorSaveAs(document, payload) {
+  if (!document) throw new Error("Illustrator document is required");
+  var path = adobepyStringOrNull(adobepySafeValue(payload, "path"));
+  adobepyIllustratorRequirePath(path, "saveAs");
+  if (typeof document.saveAs !== "function") throw new Error("Illustrator Document.saveAs() is unavailable");
+  var format = String(adobepySafeValue(payload, "format") || "ai").toLowerCase();
+  var options = adobepyObjectOrEmpty(adobepySafeValue(payload, "options"));
+  document.saveAs(adobepyIllustratorFileForPath(path), adobepyIllustratorSaveOptions(format, options));
+  return adobepyIllustratorExportResult(document, path, format, "saveAs", options);
+}
+
+function adobepyIllustratorExportFile(document, payload) {
+  if (!document) throw new Error("Illustrator document is required");
+  var path = adobepyStringOrNull(adobepySafeValue(payload, "path"));
+  adobepyIllustratorRequirePath(path, "exportFile");
+  if (typeof document.exportFile !== "function") throw new Error("Illustrator Document.exportFile() is unavailable");
+  var format = String(adobepySafeValue(payload, "format") || "png24").toLowerCase();
+  var options = adobepyObjectOrEmpty(adobepySafeValue(payload, "options"));
+  document.exportFile(adobepyIllustratorFileForPath(path), adobepyIllustratorExportType(format), adobepyIllustratorExportOptions(format, options));
+  return adobepyIllustratorExportResult(document, path, format, format, options);
+}
+
+function adobepyIllustratorExportResult(document, path, format, preset, options) {
+  return {
+    ok: true,
+    path: path,
+    format: format,
+    preset: preset,
+    options: options || {},
+    documentName: document ? adobepyStringOrNull(adobepySafeValue(document, "name")) : null,
+    typename: "ExportResult"
+  };
+}
+
+function adobepyIllustratorRequirePath(path, operation) {
+  if (!path) throw new Error("Illustrator " + operation + " path is required");
+}
+
+function adobepyIllustratorFileForPath(path) {
+  if (typeof File === "function") return new File(path);
+  return { fsName: path, fullName: path, name: String(path).split(/[\\\/]/).pop() };
+}
+
+function adobepyIllustratorDocumentPath(document) {
+  var file = adobepyIllustratorFile(adobepySafeValue(document, "fullName"));
+  return file.path;
+}
+
+function adobepyIllustratorSaveOptions(format, options) {
+  var ctor = null;
+  if (format === "pdf" && typeof PDFSaveOptions !== "undefined") ctor = PDFSaveOptions;
+  if ((format === "eps" || format === "epsf") && typeof EPSSaveOptions !== "undefined") ctor = EPSSaveOptions;
+  if ((format === "ai" || format === "illustrator") && typeof IllustratorSaveOptions !== "undefined") ctor = IllustratorSaveOptions;
+  return adobepyIllustratorOptionsObject(ctor, options);
+}
+
+function adobepyIllustratorExportOptions(format, options) {
+  var ctor = null;
+  if ((format === "png" || format === "png24") && typeof ExportOptionsPNG24 !== "undefined") ctor = ExportOptionsPNG24;
+  if ((format === "jpg" || format === "jpeg") && typeof ExportOptionsJPEG !== "undefined") ctor = ExportOptionsJPEG;
+  if (format === "svg" && typeof ExportOptionsSVG !== "undefined") ctor = ExportOptionsSVG;
+  return adobepyIllustratorOptionsObject(ctor, options);
+}
+
+function adobepyIllustratorOptionsObject(ctor, options) {
+  var output = ctor ? new ctor() : {};
+  var input = adobepyObjectOrEmpty(options);
+  for (var key in input) {
+    if (input.hasOwnProperty(key)) output[key] = input[key];
+  }
+  return output;
+}
+
+function adobepyIllustratorExportType(format) {
+  if (typeof ExportType !== "undefined") {
+    if ((format === "png" || format === "png24") && typeof ExportType.PNG24 !== "undefined") return ExportType.PNG24;
+    if ((format === "jpg" || format === "jpeg") && typeof ExportType.JPEG !== "undefined") return ExportType.JPEG;
+    if (format === "svg" && typeof ExportType.SVG !== "undefined") return ExportType.SVG;
+  }
+  return String(format).toUpperCase();
+}
+
 function adobepyIllustratorFilteredSelection(document, typenames) {
   var result = [];
   var items = document ? document.selection : null;
@@ -569,6 +817,10 @@ function adobepySerializableValue(value) {
   } catch (_) {
     return null;
   }
+}
+
+function adobepyObjectOrEmpty(value) {
+  return value && typeof value === "object" ? value : {};
 }
 
 function adobepyIllustratorColor(value) {

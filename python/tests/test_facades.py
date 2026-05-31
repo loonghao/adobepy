@@ -35,6 +35,9 @@ class CapturingClient:
                         "compoundPathItemCount": 1,
                         "placedItemCount": 1,
                         "rasterItemCount": 1,
+                        "textFrameCount": 1,
+                        "storyCount": 1,
+                        "swatchCount": 1,
                         "selectionCount": 3,
                         "typename": "Document",
                     }
@@ -564,6 +567,70 @@ class CapturingClient:
                 return raster if args[0] == "Raster" else None
             if method == "getLayerItems":
                 return [raster] if args[0] in {"layer-1", "Artwork", 0} else []
+        if host == "illustrator" and namespace == "textFrame":
+            text_frame = {
+                "id": "text-1",
+                "index": 0,
+                "name": "Headline",
+                "contents": "Hello Illustrator",
+                "kind": "PointText",
+                "orientation": "Horizontal",
+                "position": [120, 480],
+                "geometricBounds": [120, 480, 320, 430],
+                "visibleBounds": [118, 482, 322, 428],
+                "width": 200,
+                "height": 50,
+                "selected": True,
+                "layerName": "Artwork",
+                "characterCount": 17,
+                "wordCount": 2,
+                "paragraphCount": 1,
+                "typename": "TextFrame",
+            }
+            if method == "getTextFrames":
+                return [text_frame]
+            if method == "getSelected":
+                return [text_frame]
+            if method == "getByName":
+                return text_frame if args[0] == "Headline" else None
+            if method == "setContents":
+                return {**text_frame, "contents": args[1], "characterCount": len(args[1])}
+        if host == "illustrator" and namespace == "story":
+            story = {
+                "id": "story-1",
+                "index": 0,
+                "name": "Story 1",
+                "contents": "Hello Illustrator",
+                "length": 17,
+                "textFrameCount": 1,
+                "wordCount": 2,
+                "paragraphCount": 1,
+                "typename": "Story",
+            }
+            if method == "getStories":
+                return [story]
+            if method == "getByName":
+                return story if args[0] == "Story 1" else None
+        if host == "illustrator" and namespace == "swatch":
+            swatch = {
+                "index": 0,
+                "name": "Brand Red",
+                "color": {"typename": "RGBColor", "red": 255, "green": 12, "blue": 24},
+                "colorTypename": "RGBColor",
+                "typename": "Swatch",
+            }
+            if method == "getSwatches":
+                return [swatch]
+            if method == "getByName":
+                return swatch if args[0] == "Brand Red" else None
+        if host == "illustrator" and namespace == "export":
+            if method == "save":
+                return {"ok": True, "path": "C:/demo", "format": "ai", "preset": "save", "options": {}, "documentName": "demo", "typename": "ExportResult"}
+            payload = args[0]
+            if method == "saveAs":
+                return {"ok": True, "path": payload["path"], "format": payload["format"], "preset": "saveAs", "options": payload["options"], "documentName": "demo", "typename": "ExportResult"}
+            if method == "exportFile":
+                return {"ok": True, "path": payload["path"], "format": payload["format"], "preset": payload["format"], "options": payload["options"], "documentName": "demo", "typename": "ExportResult"}
         if namespace == "raw" and method == "evalJs":
             return {"source": args[0], "args": list(args[1:])}
         if namespace == "raw" and method == "getPath":
@@ -1539,6 +1606,12 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(doc.placedItemCount, 1)
         self.assertEqual(doc.raster_item_count, 1)
         self.assertEqual(doc.rasterItemCount, 1)
+        self.assertEqual(doc.text_frame_count, 1)
+        self.assertEqual(doc.textFrameCount, 1)
+        self.assertEqual(doc.story_count, 1)
+        self.assertEqual(doc.storyCount, 1)
+        self.assertEqual(doc.swatch_count, 1)
+        self.assertEqual(doc.swatchCount, 1)
         self.assertEqual(doc.selection_count, 3)
         self.assertEqual(doc.typename, "Document")
         self.assertEqual(doc.artboards[0].name, "Artboard 1")
@@ -1713,6 +1786,81 @@ class FacadeTests(unittest.TestCase):
         self.assertEqual(layer.rasterItems[0].bitsPerChannel, 8)
         self.assertEqual(doc.get_raster_item_by_name("Raster").filePath, "C:/assets/photo.png")
         self.assertEqual(doc.getRasterItemByName("Raster").imageColorSpace, "CMYK")
+        text_frame = doc.text_frames[0]
+        self.assertEqual(text_frame.name, "Headline")
+        self.assertEqual(text_frame.contents, "Hello Illustrator")
+        self.assertEqual(text_frame.kind, "PointText")
+        self.assertEqual(text_frame.orientation, "Horizontal")
+        self.assertEqual(text_frame.position, [120, 480])
+        self.assertEqual(text_frame.geometric_bounds, [120, 480, 320, 430])
+        self.assertEqual(text_frame.geometricBounds, [120, 480, 320, 430])
+        self.assertEqual(text_frame.visible_bounds, [118, 482, 322, 428])
+        self.assertEqual(text_frame.visibleBounds, [118, 482, 322, 428])
+        self.assertEqual(text_frame.width, 200)
+        self.assertEqual(text_frame.height, 50)
+        self.assertTrue(text_frame.selected)
+        self.assertEqual(text_frame.layer_name, "Artwork")
+        self.assertEqual(text_frame.layerName, "Artwork")
+        self.assertEqual(text_frame.character_count, 17)
+        self.assertEqual(text_frame.characterCount, 17)
+        self.assertEqual(text_frame.word_count, 2)
+        self.assertEqual(text_frame.wordCount, 2)
+        self.assertEqual(text_frame.paragraph_count, 1)
+        self.assertEqual(text_frame.paragraphCount, 1)
+        self.assertEqual(text_frame.typename, "TextFrame")
+        self.assertEqual(doc.textFrames[0].name, "Headline")
+        self.assertEqual(doc.selected_text_frames[0].name, "Headline")
+        self.assertEqual(doc.selectedTextFrames[0].kind, "PointText")
+        self.assertEqual(doc.get_text_frame_by_name("Headline").contents, "Hello Illustrator")
+        self.assertEqual(doc.getTextFrameByName("Headline").typename, "TextFrame")
+        self.assertEqual(doc.get_text_frame("Headline").layerName, "Artwork")
+        self.assertEqual(doc.getTextFrame("Headline").wordCount, 2)
+        self.assertEqual(text_frame.set_contents("Updated", command_name="Set AI text").contents, "Updated")
+        self.assertEqual(text_frame.character_count, 7)
+        self.assertEqual(illustrator.client.calls[-1]["options"]["commandName"], "Set AI text")
+        self.assertEqual(text_frame.setContents("Again", commandName="Set AI text 2").contents, "Again")
+        story = doc.stories[0]
+        self.assertEqual(story.name, "Story 1")
+        self.assertEqual(story.contents, "Hello Illustrator")
+        self.assertEqual(story.length, 17)
+        self.assertEqual(story.text_frame_count, 1)
+        self.assertEqual(story.textFrameCount, 1)
+        self.assertEqual(story.word_count, 2)
+        self.assertEqual(story.wordCount, 2)
+        self.assertEqual(story.paragraph_count, 1)
+        self.assertEqual(story.paragraphCount, 1)
+        self.assertEqual(doc.get_story_by_name("Story 1").typename, "Story")
+        self.assertEqual(doc.getStoryByName("Story 1").textFrameCount, 1)
+        self.assertEqual(doc.get_story("Story 1").contents, "Hello Illustrator")
+        self.assertEqual(doc.getStory("Story 1").wordCount, 2)
+        swatch = doc.swatches[0]
+        self.assertEqual(swatch.name, "Brand Red")
+        self.assertEqual(swatch.color["red"], 255)
+        self.assertEqual(swatch.color_typename, "RGBColor")
+        self.assertEqual(swatch.colorTypename, "RGBColor")
+        self.assertEqual(doc.get_swatch_by_name("Brand Red").color["blue"], 24)
+        self.assertEqual(doc.getSwatchByName("Brand Red").typename, "Swatch")
+        self.assertEqual(doc.get_swatch("Brand Red").colorTypename, "RGBColor")
+        self.assertEqual(doc.getSwatch("Brand Red").index, 0)
+        self.assertTrue(doc.save(command_name="Save AI").ok)
+        self.assertEqual(illustrator.client.calls[-1]["options"]["commandName"], "Save AI")
+        self.assertEqual(doc.save_as("C:/out/poster.ai", options={"pdfCompatible": True}).path, "C:/out/poster.ai")
+        self.assertEqual(doc.saveAs("C:/out/poster.pdf", format="pdf", options={"preserveEditability": False}).format, "pdf")
+        export_result = doc.export_file("png24", "C:/out/poster", options={"artBoardClipping": True}, command_name="Export AI")
+        self.assertEqual(export_result.path, "C:/out/poster")
+        self.assertEqual(export_result.options["artBoardClipping"], True)
+        self.assertEqual(export_result.document_name, "demo")
+        self.assertEqual(export_result.documentName, "demo")
+        self.assertEqual(export_result.typename, "ExportResult")
+        self.assertEqual(illustrator.client.calls[-1]["options"]["commandName"], "Export AI")
+        self.assertEqual(doc.exportFile("svg", "C:/out/poster-svg").format, "svg")
+        self.assertEqual(doc.exports.png24("C:/out/poster-png").preset, "png24")
+        self.assertEqual(doc.exports.jpeg("C:/out/poster-jpg").format, "jpeg")
+        self.assertEqual(doc.exports.jpg("C:/out/poster-jpg-alias").format, "jpeg")
+        self.assertEqual(doc.exports.svg("C:/out/poster.svg").format, "svg")
+        self.assertEqual(doc.exports.pdf("C:/out/poster.pdf").preset, "saveAs")
+        self.assertEqual(doc.exports.save_as("C:/out/poster-copy.ai").format, "ai")
+        self.assertEqual(doc.exports.saveAs("C:/out/poster-copy2.ai").path, "C:/out/poster-copy2.ai")
 
     def test_raw_session(self):
         client = CapturingClient()

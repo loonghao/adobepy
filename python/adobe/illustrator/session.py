@@ -12,6 +12,23 @@ class IllustratorSession(HostSession):
         super().__init__("illustrator", client)
         self.app = IllustratorApp(self)
 
+    def modal_options(
+        self,
+        *,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        default_command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> dict[str, Any]:
+        active_command = command_name or default_command_name
+        should_modal = modal if modal is not None else active_command is not None
+        options: dict[str, Any] = {"modal": should_modal}
+        if active_command:
+            options["commandName"] = active_command
+        if timeout_ms is not None:
+            options["timeoutMs"] = timeout_ms
+        return options
+
 
 class Illustrator(IllustratorSession):
     def __init__(
@@ -132,6 +149,30 @@ class DocumentProxy:
     @property
     def rasterItemCount(self) -> int | None:
         return self.raster_item_count
+
+    @property
+    def text_frame_count(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "textFrameCount", "text_frame_count"))
+
+    @property
+    def textFrameCount(self) -> int | None:
+        return self.text_frame_count
+
+    @property
+    def story_count(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "storyCount", "story_count"))
+
+    @property
+    def storyCount(self) -> int | None:
+        return self.story_count
+
+    @property
+    def swatch_count(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "swatchCount", "swatch_count"))
+
+    @property
+    def swatchCount(self) -> int | None:
+        return self.swatch_count
 
     @property
     def selection_count(self) -> int | None:
@@ -255,6 +296,38 @@ class DocumentProxy:
         return self.selected_raster_items
 
     @property
+    def text_frames(self) -> list["TextFrameProxy"]:
+        payload = self._session.invoke("textFrame", "getTextFrames")
+        return [TextFrameProxy(self._session, item) for item in payload or []]
+
+    @property
+    def textFrames(self) -> list["TextFrameProxy"]:
+        return self.text_frames
+
+    @property
+    def selected_text_frames(self) -> list["TextFrameProxy"]:
+        payload = self._session.invoke("textFrame", "getSelected")
+        return [TextFrameProxy(self._session, item) for item in payload or []]
+
+    @property
+    def selectedTextFrames(self) -> list["TextFrameProxy"]:
+        return self.selected_text_frames
+
+    @property
+    def stories(self) -> list["StoryProxy"]:
+        payload = self._session.invoke("story", "getStories")
+        return [StoryProxy(item) for item in payload or []]
+
+    @property
+    def swatches(self) -> list["SwatchProxy"]:
+        payload = self._session.invoke("swatch", "getSwatches")
+        return [SwatchProxy(item) for item in payload or []]
+
+    @property
+    def exports(self) -> "DocumentExportProxy":
+        return DocumentExportProxy(self)
+
+    @property
     def typename(self) -> str | None:
         return self._payload.get("typename")
 
@@ -299,6 +372,134 @@ class DocumentProxy:
 
     def getRasterItemByName(self, name: str) -> "RasterItemProxy | None":
         return self.get_raster_item_by_name(name)
+
+    def get_text_frame_by_name(self, name: str) -> "TextFrameProxy | None":
+        payload = self._session.invoke("textFrame", "getByName", name)
+        return TextFrameProxy(self._session, payload) if payload else None
+
+    def getTextFrameByName(self, name: str) -> "TextFrameProxy | None":
+        return self.get_text_frame_by_name(name)
+
+    def get_text_frame(self, name: str) -> "TextFrameProxy | None":
+        return self.get_text_frame_by_name(name)
+
+    def getTextFrame(self, name: str) -> "TextFrameProxy | None":
+        return self.get_text_frame_by_name(name)
+
+    def get_story_by_name(self, name: str) -> "StoryProxy | None":
+        payload = self._session.invoke("story", "getByName", name)
+        return StoryProxy(payload) if payload else None
+
+    def getStoryByName(self, name: str) -> "StoryProxy | None":
+        return self.get_story_by_name(name)
+
+    def get_story(self, name: str) -> "StoryProxy | None":
+        return self.get_story_by_name(name)
+
+    def getStory(self, name: str) -> "StoryProxy | None":
+        return self.get_story_by_name(name)
+
+    def get_swatch_by_name(self, name: str) -> "SwatchProxy | None":
+        payload = self._session.invoke("swatch", "getByName", name)
+        return SwatchProxy(payload) if payload else None
+
+    def getSwatchByName(self, name: str) -> "SwatchProxy | None":
+        return self.get_swatch_by_name(name)
+
+    def get_swatch(self, name: str) -> "SwatchProxy | None":
+        return self.get_swatch_by_name(name)
+
+    def getSwatch(self, name: str) -> "SwatchProxy | None":
+        return self.get_swatch_by_name(name)
+
+    def save(
+        self,
+        *,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        payload = self._session.invoke(
+            "export",
+            "save",
+            options=self._session.modal_options(
+                modal=modal,
+                command_name=command_name,
+                default_command_name="Save Illustrator document",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        return ExportResultProxy(payload or {})
+
+    def save_as(
+        self,
+        path: str,
+        *,
+        format: str = "ai",
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        payload = self._session.invoke(
+            "export",
+            "saveAs",
+            {"path": path, "format": format, "options": options or {}},
+            options=self._session.modal_options(
+                modal=modal,
+                command_name=command_name,
+                default_command_name="Save Illustrator document",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        return ExportResultProxy(payload or {})
+
+    def saveAs(
+        self,
+        path: str,
+        *,
+        format: str = "ai",
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "ExportResultProxy":
+        return self.save_as(path, format=format, options=options, modal=modal, command_name=commandName, timeout_ms=timeoutMs)
+
+    def export_file(
+        self,
+        format: str,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        payload = self._session.invoke(
+            "export",
+            "exportFile",
+            {"path": path, "format": format, "options": options or {}},
+            options=self._session.modal_options(
+                modal=modal,
+                command_name=command_name,
+                default_command_name="Export Illustrator document",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        return ExportResultProxy(payload or {})
+
+    def exportFile(
+        self,
+        format: str,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "ExportResultProxy":
+        return self.export_file(format, path, options=options, modal=modal, command_name=commandName, timeout_ms=timeoutMs)
 
 
 @dataclass
@@ -1374,6 +1575,385 @@ class RasterItemProxy:
     @property
     def overprint(self) -> bool | None:
         return _optional_bool(self._payload.get("overprint"))
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+
+@dataclass
+class TextFrameProxy:
+    _session: IllustratorSession
+    _payload: dict[str, Any]
+
+    @property
+    def id(self) -> Any:
+        return self._payload.get("id")
+
+    @property
+    def index(self) -> int | None:
+        return _optional_int(self._payload.get("index"))
+
+    @property
+    def name(self) -> str | None:
+        return self._payload.get("name")
+
+    @property
+    def contents(self) -> str | None:
+        return self._payload.get("contents")
+
+    @property
+    def kind(self) -> Any:
+        return self._payload.get("kind")
+
+    @property
+    def orientation(self) -> Any:
+        return self._payload.get("orientation")
+
+    @property
+    def position(self) -> Any:
+        return self._payload.get("position")
+
+    @property
+    def geometric_bounds(self) -> Any:
+        return _payload_value(self._payload, "geometricBounds", "geometric_bounds")
+
+    @property
+    def geometricBounds(self) -> Any:
+        return self.geometric_bounds
+
+    @property
+    def visible_bounds(self) -> Any:
+        return _payload_value(self._payload, "visibleBounds", "visible_bounds")
+
+    @property
+    def visibleBounds(self) -> Any:
+        return self.visible_bounds
+
+    @property
+    def width(self) -> Any:
+        return self._payload.get("width")
+
+    @property
+    def height(self) -> Any:
+        return self._payload.get("height")
+
+    @property
+    def selected(self) -> bool | None:
+        return _optional_bool(self._payload.get("selected"))
+
+    @property
+    def layer_name(self) -> str | None:
+        return _payload_value(self._payload, "layerName", "layer_name")
+
+    @property
+    def layerName(self) -> str | None:
+        return self.layer_name
+
+    @property
+    def character_count(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "characterCount", "character_count"))
+
+    @property
+    def characterCount(self) -> int | None:
+        return self.character_count
+
+    @property
+    def word_count(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "wordCount", "word_count"))
+
+    @property
+    def wordCount(self) -> int | None:
+        return self.word_count
+
+    @property
+    def paragraph_count(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "paragraphCount", "paragraph_count"))
+
+    @property
+    def paragraphCount(self) -> int | None:
+        return self.paragraph_count
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+    @property
+    def _text_frame_key(self) -> Any:
+        return _identity_key(self._payload)
+
+    def set_contents(
+        self,
+        contents: str,
+        *,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "TextFrameProxy":
+        payload = self._session.invoke(
+            "textFrame",
+            "setContents",
+            self._text_frame_key,
+            contents,
+            options=self._session.modal_options(
+                modal=modal,
+                command_name=command_name,
+                default_command_name="Set Illustrator text frame contents",
+                timeout_ms=timeout_ms,
+            ),
+        )
+        self._payload = payload or {}
+        return self
+
+    def setContents(
+        self,
+        contents: str,
+        *,
+        modal: bool | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "TextFrameProxy":
+        return self.set_contents(contents, modal=modal, command_name=commandName, timeout_ms=timeoutMs)
+
+
+@dataclass
+class StoryProxy:
+    _payload: dict[str, Any]
+
+    @property
+    def id(self) -> Any:
+        return self._payload.get("id")
+
+    @property
+    def index(self) -> int | None:
+        return _optional_int(self._payload.get("index"))
+
+    @property
+    def name(self) -> str | None:
+        return self._payload.get("name")
+
+    @property
+    def contents(self) -> str | None:
+        return self._payload.get("contents")
+
+    @property
+    def length(self) -> int | None:
+        return _optional_int(self._payload.get("length"))
+
+    @property
+    def text_frame_count(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "textFrameCount", "text_frame_count"))
+
+    @property
+    def textFrameCount(self) -> int | None:
+        return self.text_frame_count
+
+    @property
+    def word_count(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "wordCount", "word_count"))
+
+    @property
+    def wordCount(self) -> int | None:
+        return self.word_count
+
+    @property
+    def paragraph_count(self) -> int | None:
+        return _optional_int(_payload_value(self._payload, "paragraphCount", "paragraph_count"))
+
+    @property
+    def paragraphCount(self) -> int | None:
+        return self.paragraph_count
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+
+@dataclass
+class SwatchProxy:
+    _payload: dict[str, Any]
+
+    @property
+    def index(self) -> int | None:
+        return _optional_int(self._payload.get("index"))
+
+    @property
+    def name(self) -> str | None:
+        return self._payload.get("name")
+
+    @property
+    def color(self) -> Any:
+        return self._payload.get("color")
+
+    @property
+    def color_typename(self) -> str | None:
+        return _payload_value(self._payload, "colorTypename", "color_typename")
+
+    @property
+    def colorTypename(self) -> str | None:
+        return self.color_typename
+
+    @property
+    def typename(self) -> str | None:
+        return self._payload.get("typename")
+
+
+class DocumentExportProxy:
+    def __init__(self, document: DocumentProxy) -> None:
+        self._document = document
+
+    def file(
+        self,
+        format: str,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        return self._document.export_file(
+            format,
+            path,
+            options=options,
+            modal=modal,
+            command_name=command_name,
+            timeout_ms=timeout_ms,
+        )
+
+    def png24(
+        self,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        return self.file("png24", path, options=options, modal=modal, command_name=command_name, timeout_ms=timeout_ms)
+
+    def jpeg(
+        self,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        return self.file("jpeg", path, options=options, modal=modal, command_name=command_name, timeout_ms=timeout_ms)
+
+    def jpg(
+        self,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        return self.jpeg(path, options=options, modal=modal, command_name=command_name, timeout_ms=timeout_ms)
+
+    def svg(
+        self,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        return self.file("svg", path, options=options, modal=modal, command_name=command_name, timeout_ms=timeout_ms)
+
+    def pdf(
+        self,
+        path: str,
+        *,
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        return self._document.save_as(
+            path,
+            format="pdf",
+            options=options,
+            modal=modal,
+            command_name=command_name,
+            timeout_ms=timeout_ms,
+        )
+
+    def save_as(
+        self,
+        path: str,
+        *,
+        format: str = "ai",
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        command_name: str | None = None,
+        timeout_ms: int | None = None,
+    ) -> "ExportResultProxy":
+        return self._document.save_as(
+            path,
+            format=format,
+            options=options,
+            modal=modal,
+            command_name=command_name,
+            timeout_ms=timeout_ms,
+        )
+
+    def saveAs(
+        self,
+        path: str,
+        *,
+        format: str = "ai",
+        options: dict[str, Any] | None = None,
+        modal: bool | None = None,
+        commandName: str | None = None,
+        timeoutMs: int | None = None,
+    ) -> "ExportResultProxy":
+        return self.save_as(
+            path,
+            format=format,
+            options=options,
+            modal=modal,
+            command_name=commandName,
+            timeout_ms=timeoutMs,
+        )
+
+
+@dataclass
+class ExportResultProxy:
+    _payload: dict[str, Any]
+
+    @property
+    def ok(self) -> bool | None:
+        return _optional_bool(self._payload.get("ok"))
+
+    @property
+    def path(self) -> str | None:
+        return self._payload.get("path")
+
+    @property
+    def format(self) -> str | None:
+        return self._payload.get("format")
+
+    @property
+    def preset(self) -> str | None:
+        return self._payload.get("preset")
+
+    @property
+    def options(self) -> dict[str, Any]:
+        value = self._payload.get("options")
+        return value if isinstance(value, dict) else {}
+
+    @property
+    def document_name(self) -> str | None:
+        return _payload_value(self._payload, "documentName", "document_name")
+
+    @property
+    def documentName(self) -> str | None:
+        return self.document_name
 
     @property
     def typename(self) -> str | None:
